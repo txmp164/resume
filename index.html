@@ -73,7 +73,7 @@
 
         .slot-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; }
         .slot-col { display: grid; grid-template-rows: repeat(3, 1fr); gap: 0.35rem; }
-        .slot-cell { background: #cbd5e1; border: 4px solid #475569; color: #0f172a; font-size: 2rem; display: flex; align-items: center; justify-content: center; height: 64px; }
+        .slot-cell { background: #cbd5e1; border: 4px solid #475569; color: #0f172a; font-size: clamp(1.4rem, 7vw, 2rem); display: flex; align-items: center; justify-content: center; height: 64px; line-height: 1; overflow: hidden; }
         .text-blur-out { animation: spin-blur 0.25s linear infinite; filter: blur(3px); opacity: 0.8; transform: scale(0.95); }
         
         .teaser-col { animation: teaser-spin 0.25s linear infinite; position: relative; z-index: 10; border-radius: 8px;}
@@ -88,6 +88,17 @@
         .middle-frame-overlay::after { content: ""; position: absolute; right: -10px; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-top: 10px solid transparent; border-bottom: 10px solid transparent; border-left: 14px solid rgba(250,204,21,0.9); filter: drop-shadow(0 0 6px rgba(250,204,21,0.9)); }
         
         .neon-text { text-shadow: 0 0 6px rgba(250,204,21,0.8), 0 0 12px rgba(250,204,21,0.6); }
+
+        .ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        @media (max-width: 360px) {
+            .game-container { font-size: 1.1rem; }
+            .slot-cell { height: 56px; }
+        }
+        @media (max-width: 320px) {
+            .game-container { font-size: 1rem; }
+            .slot-cell { height: 52px; }
+        }
 
         .scanline {
             width: 100%; height: 100px; z-index: 10;
@@ -196,6 +207,21 @@
           { name: '求生无线电发射器', val: 5000, rarity: 'special', type: 'loot' },
           { ...RELICS.vampire, val: 800 }, { ...RELICS.cat, val: 800 }, { ...RELICS.adrenaline, val: 800 },
         ];
+
+        const EXCHANGE_ASSETS = [
+          { id: 'gold', name: '黄金', price: 100, vol: 0.02, held: 0, change: 0, costBasis: 0 },
+          { id: 'realty', name: '地产', price: 80, vol: 0.05, held: 0, change: 0, costBasis: 0 },
+          { id: 'space', name: '航天', price: 50, vol: 0.20, held: 0, change: 0, costBasis: 0 },
+          { id: 'wtc', name: 'WTC', price: 10, vol: 0.50, held: 0, change: 0, costBasis: 0 },
+        ];
+
+        const EXCHANGE_NEWS_POOL = [
+          { text: '天顶星航天宣布发现外星可乐秘方，股价暴涨 40%！', targetId: 'space', effect: 0.40 },
+          { text: '某黑客声称删库跑路，废土币瞬间蒸发 80%。', targetId: 'wtc', effect: -0.80 },
+          { text: '金库加固完成，避难所黄金买盘增强，稳中有升 5%。', targetId: 'gold', effect: 0.05 },
+          { text: '城防升级延期，地产板块承压 10%。', targetId: 'realty', effect: -0.10 },
+        ];
+        const EXCHANGE_FEE_RATE = 0.02;
 
         const ENEMIES = [
           { id: 'rat', name: '变异老鼠', hp: 10, atk: 3, exp: 10 }, { id: 'scavenger', name: '流浪拾荒者', hp: 25, atk: 6, exp: 30 },
@@ -323,7 +349,7 @@
                     
                     {bannerText && (
                         <div className={`absolute inset-0 z-[100] flex items-center justify-center pointer-events-none transition-transform duration-300 ${bannerBoost ? 'scale-110' : 'scale-100'}`}>
-                            <span className="text-3xl font-bold text-yellow-400 neon-text bg-black/80 px-4 py-2 rounded-lg border-2 border-yellow-500 shadow-[0_0_20px_#ca8a04]">
+                            <span className="text-3xl font-bold text-yellow-400 neon-text bg-black/80 px-4 py-2 rounded-lg border-2 border-yellow-500 shadow-[0_0_20px_#ca8a04] max-w-[90%] break-words whitespace-normal leading-snug">
                                 {bannerText}
                             </span>
                         </div>
@@ -387,6 +413,12 @@
           const JACKPOT_BASES = { mini: 2000, major: 8000, grand: 20000 };
           const [slotBanner, setSlotBanner] = useState('');
           const [bannerBoost, setBannerBoost] = useState(false);
+          const [exchangeAssets, setExchangeAssets] = useState(EXCHANGE_ASSETS.map(a => ({...a})));
+          const [exchangeNews, setExchangeNews] = useState(null);
+          const [exchangeLastDay, setExchangeLastDay] = useState(null);
+          const [selectedAssetId, setSelectedAssetId] = useState(EXCHANGE_ASSETS[0].id);
+          const [buyQty, setBuyQty] = useState(1);
+          const [sellQty, setSellQty] = useState(1);
 
           // Intro State
           const [introStep, setIntroStep] = useState(0);
@@ -447,6 +479,71 @@
             } else { addLog('制造材料或资金不足 ($50 + 废旧钢材)', 'error'); }
           };
 
+          const settleExchange = () => {
+            const day = Math.floor(raidState.distance / 1000) + 1;
+            if (exchangeLastDay !== null && day === exchangeLastDay) return;
+            const news = EXCHANGE_NEWS_POOL[Math.floor(Math.random() * EXCHANGE_NEWS_POOL.length)];
+            setExchangeNews(news);
+            setExchangeAssets(prev => prev.map(a => {
+              let delta = (Math.random() * 2 - 1) * a.vol;
+              if (a.id === 'realty') { delta += (a.change || 0) > 0 ? 0.02 : (a.change || 0) < 0 ? -0.02 : 0; }
+              if (news && news.targetId === a.id) { delta += news.effect; }
+              const np = Math.max(1, Math.floor(a.price * (1 + delta)));
+              const ch = Math.round(delta * 1000) / 10;
+              return { ...a, price: np, change: ch };
+            }));
+            setExchangeLastDay(day);
+          };
+
+          const buyAsset = (id, qty) => {
+            const asset = exchangeAssets.find(a => a.id === id);
+            if (!asset) return;
+            const cost = asset.price * qty;
+            const fee = Math.floor(cost * EXCHANGE_FEE_RATE);
+            const totalCost = cost + fee;
+            if (qty <= 0 || player.money < totalCost) { addLog('资金不足！', 'error'); return; }
+            setPlayer(p => ({ ...p, money: p.money - totalCost }));
+            setExchangeAssets(prev => prev.map(a => {
+              if (a.id !== id) return a;
+              const newHeld = a.held + qty;
+              const newBasis = newHeld > 0 ? (((a.costBasis || 0) * a.held) + totalCost) / newHeld : 0;
+              return { ...a, held: newHeld, costBasis: newBasis };
+            }));
+            addLog(`📈 买入 ${asset.name} ${qty} 份，花费 $${cost}（手续费 $${fee}）`, 'success');
+          };
+
+          const sellAsset = (id, qty) => {
+            const asset = exchangeAssets.find(a => a.id === id);
+            if (!asset || asset.held <= 0) { addLog('无可卖出的持仓。', 'error'); return; }
+            const sellQtyFinal = Math.min(qty, asset.held);
+            if (sellQtyFinal <= 0) { addLog('卖出数量无效。', 'error'); return; }
+            const revenue = asset.price * sellQtyFinal;
+            const fee = Math.floor(revenue * EXCHANGE_FEE_RATE);
+            const netRevenue = Math.max(0, revenue - fee);
+            const pnl = Math.round((asset.price - (asset.costBasis || 0)) * sellQtyFinal - fee);
+            setPlayer(p => ({ ...p, money: p.money + netRevenue }));
+            setExchangeAssets(prev => prev.map(a => {
+              if (a.id !== id) return a;
+              const remaining = a.held - sellQtyFinal;
+              return { ...a, held: remaining, costBasis: remaining > 0 ? a.costBasis : 0 };
+            }));
+            addLog(`💰 卖出 ${asset.name} ${sellQtyFinal} 份，收入 $${netRevenue}（手续费 $${fee}），盈亏 $${pnl}`, pnl >= 0 ? 'success' : 'error');
+          };
+
+          const sellAssetAll = (id) => {
+            const asset = exchangeAssets.find(a => a.id === id);
+            if (!asset || asset.held <= 0) { addLog('无可清仓的持仓。', 'error'); return; }
+            const revenue = asset.price * asset.held;
+            const fee = Math.floor(revenue * EXCHANGE_FEE_RATE);
+            const netRevenue = Math.max(0, revenue - fee);
+            const pnl = Math.round((asset.price - (asset.costBasis || 0)) * asset.held - fee);
+            setPlayer(p => ({ ...p, money: p.money + netRevenue }));
+            setExchangeAssets(prev => prev.map(a => a.id === id ? { ...a, held: 0, costBasis: 0 } : a));
+            addLog(`📉 清仓 ${asset.name}，收入 $${netRevenue}（手续费 $${fee}），盈亏 $${pnl}`, pnl >= 0 ? 'success' : 'error');
+          };
+
+          useEffect(() => { if (shopTab === 'exchange') settleExchange(); }, [shopTab, raidState.distance]);
+
           const handleEventChoice = (choice) => {
             if (choice.req) {
               if (choice.req.item) { const hasItem = player.storage.some(i => i.id === choice.req.item); if (!hasItem) { addLog('缺少所需物品！', 'error'); return; } const idx = player.storage.findIndex(i => i.id === choice.req.item); const newStorage = player.storage.filter((_, i) => i !== idx); setPlayer(prev => ({ ...prev, storage: newStorage })); }
@@ -461,8 +558,16 @@
           };
 
           const handleShopClick = (item, type) => {
-            if (confirmId === item.id) { if (type === 'gear') buyGear(item); else buyItem(item); setConfirmId(null); } 
-            else { setConfirmId(item.id); setTimeout(() => { setConfirmId(prev => prev === item.id ? null : prev); }, 3000); }
+            const key = item.id || item.name;
+            if (confirmId === key) {
+              if (type === 'gear') buyGear(item); 
+              else if (type === 'material') buyMaterial(item);
+              else buyItem(item);
+              setConfirmId(null);
+            } else {
+              setConfirmId(key);
+              setTimeout(() => { setConfirmId(prev => prev === key ? null : prev); }, 3000);
+            }
           };
 
           // ==========================================
@@ -601,6 +706,7 @@
           };
 
           const buyItem = (item) => { if (player.money >= item.cost) { setPlayer(prev => ({ ...prev, money: prev.money - item.cost, storage: [...prev.storage, { ...item, type: 'consumable' }] })); addLog(`购买了 ${item.name}`, 'success'); } else { addLog('资金不足！', 'error'); } };
+          const buyMaterial = (item) => { const price = Math.floor((item.val || 0) * 2); if (player.money >= price) { setPlayer(prev => ({ ...prev, money: prev.money - price, storage: [...prev.storage, { ...item }] })); addLog(`购买材料 ${item.name}，花费 $${price}`, 'success'); } else { addLog('资金不足！', 'error'); } };
           const buyGear = (gear) => { if (player.money >= gear.cost) { setPlayer(prev => ({ ...prev, money: prev.money - gear.cost, [gear.type]: gear })); addLog(`装备了 ${gear.name}`, 'success'); } else { addLog('资金不足！', 'error'); } };
           const sellItem = (index) => { const item = player.storage[index]; if (!item) return; const sellPrice = item.val || Math.floor(item.cost / 2) || 1; const catRelic = player.relics.find(r => r.id === 'cat'); const finalPrice = catRelic ? Math.floor(sellPrice * 1.2) : sellPrice; setPlayer(prev => ({ ...prev, money: prev.money + finalPrice, storage: prev.storage.filter((_, i) => i !== index) })); addLog(`出售 ${item.name}，获得 $${finalPrice}`, 'success'); };
           const groupItems = (items) => { const map = new Map(); items.forEach(item => { const key = item.id || `${item.type}:${item.name}`; if (!map.has(key)) map.set(key, { key, item, count: 0, totalVal: 0 }); const g = map.get(key); g.count += 1; g.totalVal += item.val || 0; }); return Array.from(map.values()); };
@@ -756,9 +862,10 @@
                                             <span className="text-2xl text-yellow-500 tracking-widest">=== 黑市 ===</span>
                                             <span className="text-green-400 text-xl flex items-center gap-1"><Coins size={20}/> ${player.money.toLocaleString()}</span>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-2">
+                                        <div className="grid grid-cols-3 gap-2">
                                             <button onClick={() => setShopTab('buy')} className={`py-1 text-lg rounded ${shopTab === 'buy' ? 'bg-yellow-700 text-white' : 'bg-slate-800 text-slate-400'}`}>补给</button>
                                             <button onClick={() => setShopTab('gamble')} className={`py-1 text-lg rounded ${shopTab === 'gamble' ? 'bg-purple-700 text-white' : 'bg-slate-800 text-slate-400'}`}>赌场</button>
+                                            <button onClick={() => setShopTab('exchange')} className={`py-1 text-lg rounded ${shopTab === 'exchange' ? 'bg-blue-700 text-white' : 'bg-slate-800 text-slate-400'}`}>交易所</button>
                                         </div>
                                     </div>
                                     <div className="flex-1 overflow-y-auto no-scrollbar space-y-3 pb-2 min-h-0">
@@ -784,8 +891,22 @@
                                                         <div className="text-2xl font-bold text-yellow-500">${item.cost}</div>
                                                     </div>
                                                 ))}
+                                                <h3 className="text-base text-slate-500 uppercase tracking-widest border-b border-slate-700/50 mt-4">设施材料（价格=回收价×2）</h3>
+                                                {LOOT_DB.filter(isMaterial).map(mat => {
+                                                    const key = mat.name;
+                                                    const price = Math.floor((mat.val || 0) * 2);
+                                                    return (
+                                                        <div key={`mat-${key}`} onClick={() => handleShopClick(mat, 'material')} className={`group p-3 border cursor-pointer flex justify-between items-center rounded transition-all duration-200 ${confirmId === key ? 'bg-yellow-900/30 border-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.3)]' : 'bg-slate-800/50 border-slate-600 hover:bg-slate-700 hover:border-blue-600/50'}`}>
+                                                            <div>
+                                                                <div className={`text-2xl ${confirmId === key ? 'text-yellow-400 font-bold' : 'text-blue-400 group-hover:text-blue-300'}`}>{confirmId === key ? `确认购买?` : mat.name}</div>
+                                                                <div className="text-lg text-slate-500">{confirmId === key ? '再次点击确认' : `回收价 $${mat.val} | 购买价 $${price}`}</div>
+                                                            </div>
+                                                            <div className="text-2xl font-bold text-yellow-500">${price}</div>
+                                                        </div>
+                                                    );
+                                                })}
                                             </>
-                                        ) : (
+                                        ) : shopTab === 'gamble' ? (
                                             <div className="flex flex-col items-center pt-2">
                                                 <div className="flex justify-between items-center w-full mb-3 px-4">
                                                     <button onClick={() => setShowCasinoRules(true)} className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-800 border border-slate-600 text-blue-400 hover:text-blue-300 hover:bg-slate-700 shadow-[0_0_10px_rgba(59,130,246,0.3)] transition-all">
@@ -848,6 +969,68 @@
                                                     <button disabled={inSpecialMode || isSpinning} onClick={() => setBetAmount(Math.min(player.money, betAmount + (isVipMode ? 100 : 10)))} className={`bg-slate-700 px-4 py-2 rounded border border-slate-500 text-xl ${(inSpecialMode || isSpinning) ? 'opacity-50 cursor-not-allowed' : ''}`}>+</button>
                                                 </div>
                                                 <button disabled={inSpecialMode || isSpinning} onClick={() => setBetAmount(Math.min(player.money, isVipMode ? 5000 : 500))} className={`text-sm mt-2 underline ${(inSpecialMode || isSpinning) ? 'text-slate-700 cursor-not-allowed' : 'text-slate-500'}`}>MAX BET (${isVipMode ? 5000 : 500})</button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col pt-2">
+                                                <div className={`mx-4 mb-2 px-3 py-2 rounded border ${exchangeNews ? 'border-blue-500/50 bg-blue-900/10 text-blue-300' : 'border-slate-700 bg-slate-800 text-slate-400'} text-sm truncate`}>{exchangeNews ? exchangeNews.text : '今日暂无重大新闻……'}</div>
+                                                <div className="px-2 space-y-2">
+                                                    {exchangeAssets.map(a => {
+                                                        const up = a.change > 0; const down = a.change < 0; const color = up ? 'text-green-400' : down ? 'text-red-400' : 'text-slate-400';
+                                                        const selected = selectedAssetId === a.id;
+                                                        return (
+                                                            <div key={a.id} onClick={() => setSelectedAssetId(a.id)} className={`p-3 border rounded cursor-pointer ${selected ? 'bg-blue-900/20 border-blue-500' : 'bg-slate-800 border-slate-600'} flex items-center justify-between`}>
+                                                                <div className="min-w-0">
+                                                                    <div className="text-xl text-slate-200 truncate max-w-[50vw]">{a.name}</div>
+                                                                    <div className="text-sm text-slate-500">持有 {a.held} 份</div>
+                                                                </div>
+                                                                <div className="text-right">
+                                                                    <div className="text-2xl text-yellow-500 font-bold">${a.price}</div>
+                                                                    <div className={`text-sm ${color}`}>{a.change > 0 ? '+' : ''}{a.change}%</div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                                <div className="mt-2 px-2 pt-2 border-t border-slate-700">
+                                                    {(() => {
+                                                        const sa = exchangeAssets.find(x => x.id === selectedAssetId) || exchangeAssets[0];
+                                                        const maxBuyQty = Math.floor(player.money / ((sa?.price || 1) * (1 + EXCHANGE_FEE_RATE)));
+                                                        const maxSellQty = sa?.held || 0;
+                                                        const canBuy = maxBuyQty > 0;
+                                                        const canSell = maxSellQty > 0;
+                                                        return (
+                                                            <div className="space-y-2">
+                                                                <div className="flex items-center justify-between flex-wrap gap-y-1">
+                                                                    <div className="text-slate-400 min-w-0 truncate">选中：<span className="text-slate-200">{sa?.name}</span> @ <span className="text-yellow-500">${sa?.price}</span></div>
+                                                                    <div className="text-slate-500">持有 {sa?.held} 份</div>
+                                                                </div>
+                                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                                    <div className="p-2 border rounded bg-slate-800 border-slate-600 min-w-0 text-sm sm:text-base">
+                                                                        <div className="text-slate-300 mb-1">买入</div>
+                                                                        <div className="flex items-center flex-wrap gap-2">
+                                                                            <button onClick={() => setBuyQty(q => Math.max(1, q - 1))} className="px-2 py-1 bg-slate-700 border border-slate-600 rounded">-</button>
+                                                                            <div className="px-3 py-1 bg-black/40 text-yellow-400 rounded border border-slate-700">{buyQty}</div>
+                                                                            <button onClick={() => setBuyQty(q => Math.min(maxBuyQty || 1, q + 1))} className="px-2 py-1 bg-slate-700 border border-slate-600 rounded">+</button>
+                                                                            <button onClick={() => buyAsset(sa.id, buyQty)} disabled={!canBuy || buyQty <= 0 || player.money < (sa.price * buyQty * (1 + EXCHANGE_FEE_RATE))} className={`ml-2 px-3 py-1 rounded border ${(!canBuy || player.money < (sa.price * buyQty * (1 + EXCHANGE_FEE_RATE))) ? 'bg-slate-700 border-slate-700 text-slate-400' : 'bg-green-700 border-green-800 text-white hover:bg-green-600'}`}>买入</button>
+                                                                            <button onClick={() => { const qty = Math.floor(player.money / (sa.price * (1 + EXCHANGE_FEE_RATE))); if (qty>0){ setBuyQty(qty); buyAsset(sa.id, qty);} }} disabled={!canBuy} className={`px-3 py-1 rounded border ${!canBuy ? 'bg-slate-700 border-slate-700 text-slate-400' : 'bg-blue-700 border-blue-800 text-white hover:bg-blue-600'}`}>梭哈</button>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="p-2 border rounded bg-slate-800 border-slate-600 min-w-0 text-sm sm:text-base">
+                                                                        <div className="text-slate-300 mb-1">卖出</div>
+                                                                        <div className="flex items-center flex-wrap gap-2">
+                                                                            <button onClick={() => setSellQty(q => Math.max(1, q - 1))} className="px-2 py-1 bg-slate-700 border border-slate-600 rounded">-</button>
+                                                                            <div className="px-3 py-1 bg-black/40 text-red-400 rounded border border-slate-700">{sellQty}</div>
+                                                                            <button onClick={() => setSellQty(q => Math.min(maxSellQty || 1, q + 1))} className="px-2 py-1 bg-slate-700 border border-slate-600 rounded">+</button>
+                                                                            <button onClick={() => sellAsset(sa.id, sellQty)} disabled={!canSell || sellQty <= 0 || sellQty > sa.held} className={`ml-2 px-3 py-1 rounded border ${(!canSell || sellQty > sa.held) ? 'bg-slate-700 border-slate-700 text-slate-400' : 'bg-orange-700 border-orange-800 text-white hover:bg-orange-600'}`}>卖出</button>
+                                                                            <button onClick={() => sellAssetAll(sa.id)} disabled={!canSell} className={`px-3 py-1 rounded border ${!canSell ? 'bg-slate-700 border-slate-700 text-slate-400' : 'bg-red-700 border-red-800 text-white hover:bg-red-600'}`}>清仓</button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="text-[10px] text-slate-500 mt-1">交易费 2%（买入与卖出均收取）</div>
+                                                            </div>
+                                                        );
+                                                    })()}
+                                                </div>
                                             </div>
                                         )}
                                     </div>
