@@ -41,7 +41,7 @@
             20% { transform: translate(-3px, 0px) rotate(1deg); }
             40% { transform: translate(1px, -1px) rotate(1deg); }
             60% { transform: translate(-3px, 1px) rotate(0deg); }
-            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            80% { transform: translate(1px, -1px) rotate(1deg); }
         }
         .shake-anim { animation: shake 0.5s; }
         
@@ -65,7 +65,6 @@
         @keyframes pop-in { 0% { transform: scale(0.8); opacity: 0; } 60% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
         @keyframes win-pulse { 0%,100% { box-shadow: 0 0 6px #facc15; } 50% { box-shadow: 0 0 18px #facc15; } }
         
-        /* 修复悬念特效：合并模糊与红光，使其仍然保持转动 */
         @keyframes teaser-spin { 
             0% { filter: blur(2px) drop-shadow(0 0 5px #ef4444); transform: translateY(-10%); } 
             50% { filter: blur(4px) brightness(1.3) drop-shadow(0 0 20px #ef4444); transform: translateY(10%); } 
@@ -82,7 +81,6 @@
         .slot-cell.pop { animation: pop-in 0.3s ease-out; }
         .slot-cell.win { animation: win-pulse 1s infinite; border-color: #facc15; z-index: 5; position: relative;}
         
-        /* 修复指针冲突：只保留 middle-frame-overlay 的伪元素 */
         .mid-row-frame { position: relative; }
         .slot-col .slot-cell:nth-child(2) { background: #cbd5e1; filter: brightness(0.9); }
         .middle-frame-overlay { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); height: 72px; border: 2px solid rgba(167,139,250,0.6); box-shadow: 0 0 12px rgba(167,139,250,0.6); pointer-events: none; border-radius: 6px; z-index: 20;}
@@ -239,7 +237,6 @@
             const [displayGrid, setDisplayGrid] = useState(Array.from({length:3},()=>Array.from({length:5},()=> '❓')));
             const spinTimers = useRef([null,null,null,null,null]);
             const [popCells, setPopCells] = useState(new Set());
-            // 用于控制悬念红光的时间轴状态
             const [activeTeaser, setActiveTeaser] = useState(null);
 
             const randPool = ['💀','🔧','🍗','☢️','💎','7️⃣','🃏','⭐'];
@@ -256,7 +253,6 @@
                 }, 50);
             };
 
-            // 修复1：去掉 Promise 包装，改成普通的同步函数，不阻塞下一列的循环
             const stopSpinAnim = (c, finalCol) => {
                 if (spinTimers.current[c]) { clearInterval(spinTimers.current[c]); spinTimers.current[c]=null; }
                 setAnimCols(prev => { const p=[...prev]; p[c]=false; return p; });
@@ -281,7 +277,6 @@
                 }, 300);
             };
 
-            // 控制整体旋转开始/强制中断
             useEffect(() => {
                 if (isSpinning) {
                     for (let c=0;c<5;c++) startSpinAnim(c);
@@ -293,7 +288,6 @@
                 return () => { for (let c=0;c<5;c++) { if (spinTimers.current[c]) { clearInterval(spinTimers.current[c]); spinTimers.current[c]=null; } } };
             }, [isSpinning]);
 
-            // 控制逐列停止的剧本异步循环
             useEffect(() => {
                 if (isSpinning && result) {
                     (async () => {
@@ -304,12 +298,10 @@
                                 baseDelay = 2000;
                                 setActiveTeaser(4); 
                             }
-                            // 准确等待预定时间
                             await new Promise(r => setTimeout(r, baseDelay));
                             
                             if (spinTimers.current[c]) {
                                 const finalCol = [result[0][c], result[1][c], result[2][c]];
-                                // 修复2：这里去掉 await！让回弹动画自己播去，不阻塞下一个轴的时间计算
                                 stopSpinAnim(c, finalCol);
                                 if (c === 4) setActiveTeaser(null);
                                 scatterCountSoFar += finalCol.filter(s=>s==='⭐').length;
@@ -323,7 +315,6 @@
                 <div className={`bg-slate-900 p-3 border-4 ${isVipMode ? 'border-red-600 shadow-[0_0_20px_rgba(220,38,38,0.5)]' : 'border-yellow-600'} rounded-lg text-center mb-2 relative overflow-hidden ${isFrenzy ? 'fever-mode' : ''}`}>
                     <div className={`absolute inset-0 ${isVipMode ? 'bg-red-900/10' : 'bg-yellow-900/10'} pointer-events-none`}></div>
                     
-                    {/* 修复 BUG4：接收并渲染重要播报横幅 */}
                     {bannerText && (
                         <div className={`absolute inset-0 z-[100] flex items-center justify-center pointer-events-none transition-transform duration-300 ${bannerBoost ? 'scale-110' : 'scale-100'}`}>
                             <span className="text-3xl font-bold text-yellow-400 neon-text bg-black/80 px-4 py-2 rounded-lg border-2 border-yellow-500 shadow-[0_0_20px_#ca8a04]">
@@ -340,7 +331,6 @@
                     <div className="mb-2 flex justify-between items-center px-1 relative z-10"><div className="text-[10px] text-purple-300">ENERGY {energy}/10</div><div className="text-[10px] text-purple-300">FS {freeSpins} / RF {frenzySpins}</div></div>
                     
                     <div className="relative bg-black/40 p-2 rounded z-10">
-                        {/* 修复 BUG5：仅保留这一个覆盖层，移除 mid-row-frame 的三角重影 */}
                         <div className="middle-frame-overlay"></div>
                         <div className="slot-grid mid-row-frame">
                         {[0,1,2,3,4].map(c => (
@@ -473,6 +463,8 @@
           // ==========================================
           const handleSpin5x3 = () => {
               const isFreeSpin = freeSpins > 0; const isFrenzySpin = frenzySpins > 0;
+              const inSpecialMode = isFreeSpin || isFrenzySpin || isFrenzy;
+
               if (!isFreeSpin && !isFrenzySpin && player.money < betAmount) { addLog("资金不足！", "error"); return; }
               
               if (!isFreeSpin && !isFrenzySpin) {
@@ -483,7 +475,6 @@
               
               setIsSpinning(true); setSlotGrid(null); setSlotMoodMsg(''); setWinningPositions([]); setTeaserCol(null); setSlotBanner(''); setBannerBoost(false);
               
-              // VIP 模式极度两极分化：减少低级奖励，大增骷髅陷阱，但相应提高大奖概率
               const poolNormal = [{s:'💀',w:20},{s:'🔧',w:25},{s:'🍗',w:20},{s:'☢️',w:15},{s:'💎',w:10},{s:'7️⃣',w:4},{s:'🃏',w:4},{s:'⭐',w:2}];
               const poolVip = [{s:'💀',w:35},{s:'🔧',w:10},{s:'🍗',w:10},{s:'☢️',w:15},{s:'💎',w:15},{s:'7️⃣',w:8},{s:'🃏',w:4},{s:'⭐',w:3}];
               const poolBase = isVipMode ? poolVip : poolNormal;
@@ -504,10 +495,16 @@
                   
                   let len=0; let tempWins=[];
                   for (let c=0;c<5;c++){ const sym=seq[c]; if (sym==='⭐' || sym==='💀') break; if (sym===base || sym==='🃏') { len++; tempWins.push([lines[li][c], c]); } else break; }
+                  
                   if (len>=3) { 
                       wins.push(...tempWins);
                       totalMult += mul[base][len] || 0; 
-                      energyGain += (len===3?1:len===4?2:3); 
+                      
+                      // 核心修复：狂热模式（Frenzy）或剩余狂热次数下，不计入充能
+                      if (!(isFrenzy || isFrenzySpin)) {
+                          energyGain += (len===3?1:len===4?2:3); 
+                      }
+                      
                       if (len===5) { if (base==='☢️') miniWin=true; if (base==='💎') majorWin=true; if (base==='7️⃣') grandWin=true; } 
                   }
               }
@@ -518,12 +515,8 @@
               setTeaserCol(teaser);
               setSlotGrid(grid);
               
-              // 修复3：校准主程序的等待时间。
-              // 5轴正常转完需要 1700ms，加上最后一个轴 300ms的 Q弹动画，刚好 2000ms。
-              // 有悬念时转完需要 3400ms，加上 300ms弹簧动画，刚好 3700ms。
               const baseDelay = teaser === 4 ? 3700 : 2000;
               
-              // 第 1400ms 是第4列停稳，悬念正式开始拉扯的瞬间
               if (teaser === 4) {
                   setTimeout(() => {
                       setSlotBanner('即将出免费摇奖...？！！');
@@ -532,7 +525,6 @@
                   }, 1400);
               }
 
-              // 时间到，机器彻底停稳，弹出奖励
               setTimeout(() => { 
                   setWinningPositions(wins); 
                   setIsSpinning(false); 
@@ -561,14 +553,21 @@
                       addLog('🎰 未中奖。', 'error'); 
                   }
                   
-                  const newEnergy = energy + energyGain; 
-                  if (newEnergy >= 10) { 
-                      setEnergy(newEnergy - 10); setFrenzySpins(prev=>prev + 5); setIsFrenzy(true); 
-                      if (!miniWin && !majorWin && !grandWin) { 
-                          setTimeout(() => { setSlotBanner('RADIATION FRENZY!'); setBannerBoost(true); setTimeout(()=>setBannerBoost(false),600); }, 600);
+                  // 处理能量逻辑
+                  if (!(isFrenzy || isFrenzySpin)) {
+                      const newEnergy = energy + energyGain; 
+                      if (newEnergy >= 10) { 
+                          setEnergy(0); // 触发后重置为0
+                          setFrenzySpins(prev=>prev + 5); setIsFrenzy(true); 
+                          if (!miniWin && !majorWin && !grandWin) { 
+                              setTimeout(() => { setSlotBanner('RADIATION FRENZY!'); setBannerBoost(true); setTimeout(()=>setBannerBoost(false),600); }, 600);
+                          }
+                      } else { 
+                          setEnergy(newEnergy); setIsFrenzy(false); 
                       }
-                  } else { 
-                      setEnergy(newEnergy); setIsFrenzy(frenzySpins>0); 
+                  } else {
+                      // 如果在狂热中且次数用完，重置狂热标志
+                      if (frenzySpins === 0) setIsFrenzy(false);
                   }
               }, baseDelay);
           };
@@ -587,7 +586,7 @@
           const startRaid = () => { setRaidState({ distance: 0, dangerLevel: 1, currentEnemy: null, isGlitchEnemy: false, tempLoot: [], currentLootItem: null, currentInteractiveEvent: null }); setPlayer(p => ({ ...p, sanity: Math.max(0, p.sanity - 5) })); setScene('raid'); addLog('进入废墟... 感觉到这里充满了恶意。'); };
           const generateLootItem = (dist) => { const rand = Math.random() * 100; const luckBonus = Math.floor(dist / 100); const moodBonus = player.mood > 80 ? 5 : 0; let targetRarity = 'white'; if (dist > 3000 && Math.random() > 0.98) targetRarity = 'special'; else { const score = rand + luckBonus + moodBonus; if (score > 140) targetRarity = 'gold'; else if (score > 115) targetRarity = 'purple'; else if (score > 90) targetRarity = 'blue'; else if (score > 60) targetRarity = 'green'; else targetRarity = 'white'; } let pool = LOOT_DB.filter(i => i.rarity === targetRarity); if (pool.length === 0) pool = LOOT_DB.filter(i => i.rarity === 'white'); return pool[Math.floor(Math.random() * pool.length)]; };
           const explore = () => { if (player.satiety <= 0) { addLog('你饿得走不动了... 生命值正在流失！', 'danger'); setPlayer(p => ({ ...p, hp: Math.max(0, p.hp - 10) })); if (player.hp <= 10) setScene('gameover'); return; } const newDist = raidState.distance + 100; const rng = Math.random(); const currentDanger = 1 + Math.floor(newDist / 500); const satBase = 5, sanBase = 2; let satCost = satBase, sanCost = sanBase; if (player.mood < 15) { satCost += 5; sanCost += 2; } else if (player.mood < 30) { satCost += 2; sanCost += 1; } setPlayer(prev => ({ ...prev, satiety: Math.max(0, prev.satiety - satCost), sanity: Math.max(0, prev.sanity - sanCost) })); setRaidState(prev => ({ ...prev, distance: newDist, dangerLevel: currentDanger })); addLog(`深入废墟 ${newDist}m... (饱食-${satCost}, San-${sanCost})`); if (player.sanity < 50 && Math.random() > 0.7) addLog('你听到耳边有奇怪的低语...', 'danger'); if (rng < 0.2) { const event = STORY_EVENTS[Math.floor(Math.random() * STORY_EVENTS.length)]; setRaidState(prev => ({ ...prev, currentInteractiveEvent: event })); setScene('interactive_event'); addLog('前方出现异常情况...', 'blue'); return; } if (rng < 0.45) { let enemy = null; let isGlitch = false; if (player.sanity < 30 && Math.random() < 0.6) { isGlitch = true; const madnessScale = (50 - player.sanity) / 10; enemy = { name: '?&%#@!', hp: 50 + (madnessScale * 20), maxHp: 50 + (madnessScale * 20), atk: 8 + (madnessScale * 3), exp: 0 }; } else { const enemyPool = ENEMIES.filter((_, idx) => idx < currentDanger); const enemyTemplate = enemyPool[Math.floor(Math.random() * enemyPool.length)] || ENEMIES[ENEMIES.length-1]; enemy = { ...enemyTemplate, maxHp: enemyTemplate.hp }; } setRaidState(prev => ({ ...prev, currentEnemy: enemy, isGlitchEnemy: isGlitch })); setPlayer(p => ({ ...p, sanity: Math.max(0, p.sanity - 5), mood: Math.max(0, p.mood - 2) })); setScene('combat'); if (isGlitch) addLog('警告：遭遇不可名状的实体！', 'danger'); else addLog(`遭遇敌对目标：${enemy.name}！`, 'danger'); } else if (rng < 0.8) { const lootItem = generateLootItem(newDist); setRaidState(prev => ({ ...prev, tempLoot: [...prev.tempLoot, lootItem], currentLootItem: lootItem })); setPlayer(p => ({ ...p, mood: Math.min(p.maxMood, p.mood + 5) })); addLog(`发现物资：${lootItem.name}`, 'success'); setScene('event'); } else { setPlayer(p => ({ ...p, mood: Math.max(0, p.mood - 1) })); addLog('周围很安静，也许太安静了。'); } };
-          const handleCombat = (action) => { if (!raidState.currentEnemy) return; if (action === 'attack') { let hitChance = 0.9; let critChance = 0.1; let finalAtk = player.weapon.atk; const adrenalineRelic = player.relics.find(r => r.id === 'adrenaline'); if (adrenalineRelic && player.hp < player.maxHp * 0.3) { finalAtk *= 2; addLog('肾上腺素激活！伤害翻倍！', 'blue'); } if (player.mood > 80) { critChance = 0.3; } if (player.mood < 30) { hitChance = 0.6; critChance = 0; } if (raidState.isGlitchEnemy) { setPlayer(p => ({ ...p, satiety: Math.max(0, p.satiety - 2) })); addLog('攻击这个怪物让你感到异常疲惫...(饱食-2)', 'danger'); } if (Math.random() > hitChance) { addLog('你的攻击落空了！(心情低落)', 'error'); setPlayer(p => ({ ...p, mood: Math.max(0, p.mood - 1) })); } else { let dmg = Math.max(1, finalAtk + Math.floor(Math.random() * 3)); if (Math.random() < critChance) { dmg = Math.floor(dmg * 1.5); addLog('暴击！', 'success'); setPlayer(p => ({ ...p, mood: Math.min(p.maxMood, p.mood + 1) })); } const remainingEnemyHp = raidState.currentEnemy.hp - dmg; addLog(`你造成了 ${dmg} 点伤害。`); if (remainingEnemyHp <= 0) { addLog(`击败了敌人！`, 'success'); const enemy = raidState.currentEnemy; const baseReward = Math.floor(((enemy?.exp || 20) * 1.5) + ((enemy?.atk || 5) * 3)); const moneyReward = Math.max(10, baseReward * raidState.dangerLevel + Math.floor(Math.random() * 20)); const dropItems = []; if (Math.random() < 0.6) dropItems.push({ ...ITEMS.food, type: 'consumable' }); if (Math.random() < 0.3) dropItems.push({ ...ITEMS.medkit, type: 'consumable' }); if (player.facilities.workbench && Math.random() < 0.2) dropItems.push({ ...ITEMS.ammo_box, type: 'consumable' }); setPlayer(p => ({ ...p, money: p.money + moneyReward, storage: [...p.storage, ...dropItems] })); addLog(`获得 $${moneyReward}${dropItems.length ? '，并拾取 ' + dropItems.map(i => i.name).join('、') : ''}`, 'success'); const vampireRelic = player.relics.find(r => r.id === 'vampire'); if (vampireRelic) { setPlayer(p => ({ ...p, hp: Math.min(p.maxHp, p.hp + 5) })); addLog('吸血鬼之牙：汲取了 5 点生命。', 'blue'); } setPlayer(p => ({ ...p, mood: Math.min(p.maxMood, p.mood + 5) })); setRaidState(prev => ({ ...prev, currentEnemy: null })); setScene('raid'); return; } setRaidState(prev => ({ ...prev, currentEnemy: { ...prev.currentEnemy, hp: remainingEnemyHp } })); } const enemyDmg = Math.max(0, raidState.currentEnemy.atk - player.armor.def); setPlayer(prev => ({ ...prev, hp: prev.hp - enemyDmg, mood: Math.max(0, prev.mood - 2) })); if(enemyDmg > 0) triggerShake(); addLog(`敌人反击！受到 ${enemyDmg} 点伤害。`, 'danger'); if (player.hp - enemyDmg <= 0) setScene('gameover'); } else if (action === 'flee') { let fleeChance = 0.5; if (player.mood > 80) fleeChance = 0.7; if (player.mood < 30) fleeChance = 0.3; if (Math.random() < fleeChance) { addLog('逃跑成功！'); setRaidState(prev => ({ ...prev, currentEnemy: null })); setPlayer(p => ({ ...p, mood: Math.min(p.maxMood, p.mood + 2) })); addLog('短暂喘息：心情 +2', 'success'); setScene('raid'); } else { addLog('逃跑失败！被敌人追上了。', 'danger'); const enemyDmg = Math.max(0, raidState.currentEnemy.atk - player.armor.def); setPlayer(prev => ({ ...prev, hp: prev.hp - enemyDmg })); triggerShake(); if (player.hp - enemyDmg <= 0) setScene('gameover'); } } };
+          const handleCombat = (action) => { if (!raidState.currentEnemy) return; if (action === 'attack') { let hitChance = 0.9; let xfinalAtk = player.weapon.atk; const adrenalineRelic = player.relics.find(r => r.id === 'adrenaline'); if (adrenalineRelic && player.hp < player.maxHp * 0.3) { xfinalAtk *= 2; addLog('肾上腺素激活！伤害翻倍！', 'blue'); } if (player.mood > 80) { } if (player.mood < 30) { hitChance = 0.6; } if (raidState.isGlitchEnemy) { setPlayer(p => ({ ...p, satiety: Math.max(0, p.satiety - 2) })); addLog('攻击这个怪物让你感到异常疲惫...(饱食-2)', 'danger'); } if (Math.random() > hitChance) { addLog('你的攻击落空了！(心情低落)', 'error'); setPlayer(p => ({ ...p, mood: Math.max(0, p.mood - 1) })); } else { let dmg = Math.max(1, xfinalAtk + Math.floor(Math.random() * 3)); const remainingEnemyHp = raidState.currentEnemy.hp - dmg; addLog(`你造成了 ${dmg} 点伤害。`); if (remainingEnemyHp <= 0) { addLog(`击败了敌人！`, 'success'); const enemy = raidState.currentEnemy; const baseReward = Math.floor(((enemy?.exp || 20) * 1.5) + ((enemy?.atk || 5) * 3)); const moneyReward = Math.max(10, baseReward * raidState.dangerLevel + Math.floor(Math.random() * 20)); const dropItems = []; if (Math.random() < 0.6) dropItems.push({ ...ITEMS.food, type: 'consumable' }); if (Math.random() < 0.3) dropItems.push({ ...ITEMS.medkit, type: 'consumable' }); if (player.facilities.workbench && Math.random() < 0.2) dropItems.push({ ...ITEMS.ammo_box, type: 'consumable' }); setPlayer(p => ({ ...p, money: p.money + moneyReward, storage: [...p.storage, ...dropItems] })); addLog(`获得 $${moneyReward}${dropItems.length ? '，并拾取 ' + dropItems.map(i => i.name).join('、') : ''}`, 'success'); const vampireRelic = player.relics.find(r => r.id === 'vampire'); if (vampireRelic) { setPlayer(p => ({ ...p, hp: Math.min(p.maxHp, p.hp + 5) })); addLog('吸血鬼之牙：汲取了 5 点生命。', 'blue'); } setPlayer(p => ({ ...p, mood: Math.min(p.maxMood, p.mood + 5) })); setRaidState(prev => ({ ...prev, currentEnemy: null })); setScene('raid'); return; } setRaidState(prev => ({ ...prev, currentEnemy: { ...prev.currentEnemy, hp: remainingEnemyHp } })); } const enemyDmg = Math.max(0, raidState.currentEnemy.atk - player.armor.def); setPlayer(prev => ({ ...prev, hp: prev.hp - enemyDmg, mood: Math.max(0, prev.mood - 2) })); if(enemyDmg > 0) triggerShake(); addLog(`敌人反击！受到 ${enemyDmg} 点伤害。`, 'danger'); if (player.hp - enemyDmg <= 0) setScene('gameover'); } else if (action === 'flee') { let fleeChance = 0.5; if (player.mood > 80) fleeChance = 0.7; if (player.mood < 30) fleeChance = 0.3; if (Math.random() < fleeChance) { addLog('逃跑成功！'); setRaidState(prev => ({ ...prev, currentEnemy: null })); setPlayer(p => ({ ...p, mood: Math.min(p.maxMood, p.mood + 2) })); addLog('短暂喘息：心情 +2', 'success'); setScene('raid'); } else { addLog('逃跑失败！被敌人追上了。', 'danger'); const enemyDmg = Math.max(0, raidState.currentEnemy.atk - player.armor.def); setPlayer(prev => ({ ...prev, hp: prev.hp - enemyDmg })); triggerShake(); if (player.hp - enemyDmg <= 0) setScene('gameover'); } } };
           const evac = () => { const healAmount = player.facilities.medical ? 40 : 20; setPlayer(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + healAmount), sanity: Math.min(prev.maxSanity, prev.sanity + 20), storage: [...prev.storage, ...raidState.tempLoot] })); addLog(`撤离成功！物资已转运至仓库。`, 'success'); setScene('result'); };
           const resetGame = () => { setPlayer({ hp: 100, maxHp: 100, satiety: 100, maxSatiety: 100, mood: 100, maxMood: 100, sanity: 100, maxSanity: 100, money: 500, weapon: GEAR.knife, armor: GEAR.clothes, relics: [], facilities: {}, inventory: [], storage: [], }); setScene('intro'); setIntroStep(0); setLogs(['重新开始。祝你好运，行者。']); }
           
@@ -764,12 +763,13 @@
                                                     </button>
                                                     <button 
                                                         onClick={() => {
-                                                            if (isSpinning) return;
+                                                            if (inSpecialMode || isSpinning) return;
                                                             const next = !isVipMode;
                                                             setIsVipMode(next);
                                                             setBetAmount(next ? 500 : 50); 
                                                         }} 
-                                                        className={`px-6 py-1.5 font-bold text-lg rounded border transition-colors ${isVipMode ? 'bg-red-900/50 border-red-500 text-red-400 shadow-[0_0_10px_rgba(220,38,38,0.5)]' : 'bg-slate-800 border-slate-600 text-slate-400'}`}
+                                                        disabled={isSpinning || freeSpins > 0 || frenzySpins > 0 || isFrenzy}
+                                                        className={`px-6 py-1.5 font-bold text-lg rounded border transition-colors ${(isSpinning || freeSpins > 0 || frenzySpins > 0 || isFrenzy) ? 'opacity-50 cursor-not-allowed grayscale ' : ''}${isVipMode ? 'bg-red-900/50 border-red-500 text-red-400 shadow-[0_0_10px_rgba(220,38,38,0.5)]' : 'bg-slate-800 border-slate-600 text-slate-400'}`}
                                                     >
                                                         {isVipMode ? '🔥 VIP高危模式' : '普通模式'}
                                                     </button>
@@ -795,11 +795,11 @@
                                                     isVipMode={isVipMode}
                                                 />
                                                 <div className="flex gap-4 mt-2 w-full justify-center">
-                                                    <button onClick={() => setBetAmount(Math.max(isVipMode ? 500 : 10, betAmount - (isVipMode ? 100 : 10)))} className="bg-slate-700 px-4 py-2 rounded border border-slate-500 text-xl">-</button>
+                                                    <button disabled={isSpinning || freeSpins > 0 || frenzySpins > 0 || isFrenzy} onClick={() => setBetAmount(Math.max(isVipMode ? 500 : 10, betAmount - (isVipMode ? 100 : 10)))} className={`bg-slate-700 px-4 py-2 rounded border border-slate-500 text-xl ${(isSpinning || freeSpins > 0 || frenzySpins > 0 || isFrenzy) ? 'opacity-50 cursor-not-allowed' : ''}`}>-</button>
                                                     <div className={`bg-black/50 px-6 py-2 rounded text-xl border border-slate-600 w-32 text-center ${isVipMode ? 'text-red-500' : 'text-yellow-500'}`}>${betAmount}</div>
-                                                    <button onClick={() => setBetAmount(Math.min(player.money, betAmount + (isVipMode ? 100 : 10)))} className="bg-slate-700 px-4 py-2 rounded border border-slate-500 text-xl">+</button>
+                                                    <button disabled={isSpinning || freeSpins > 0 || frenzySpins > 0 || isFrenzy} onClick={() => setBetAmount(Math.min(player.money, betAmount + (isVipMode ? 100 : 10)))} className={`bg-slate-700 px-4 py-2 rounded border border-slate-500 text-xl ${(isSpinning || freeSpins > 0 || frenzySpins > 0 || isFrenzy) ? 'opacity-50 cursor-not-allowed' : ''}`}>+</button>
                                                 </div>
-                                                <button onClick={() => setBetAmount(Math.min(player.money, isVipMode ? 5000 : 500))} className="text-sm text-slate-500 mt-2 underline">MAX BET (${isVipMode ? 5000 : 500})</button>
+                                                <button disabled={isSpinning || freeSpins > 0 || frenzySpins > 0 || isFrenzy} onClick={() => setBetAmount(Math.min(player.money, isVipMode ? 5000 : 500))} className={`text-sm mt-2 underline ${(isSpinning || freeSpins > 0 || frenzySpins > 0 || isFrenzy) ? 'text-slate-700 cursor-not-allowed' : 'text-slate-500'}`}>MAX BET (${isVipMode ? 5000 : 500})</button>
                                             </div>
                                         )}
                                     </div>
@@ -827,7 +827,7 @@
                                                 </div>
                                                 <div className="bg-slate-800 p-3 rounded border border-slate-700">
                                                     <h3 className="text-purple-400 text-lg mb-1 font-bold">☢️ 连击充能 & 狂热</h3>
-                                                    <p>每次连线均可获得能量：3连得1点，4连得2点，5连得3点。<br/>能量满 10 点触发 <span className="text-purple-300 font-bold">5次 放射狂热 (Frenzy)</span>：期间自动剔除所有 💀 和 🔧 增加暴富率，且所有奖金 <span className="text-white font-bold">x3 倍</span>！</p>
+                                                    <p>每次连线均可获得能量：3连得1点，4连得2点，5连得3点。<br/>能量满 10 点触发 <span className="text-purple-300 font-bold">5次 放射狂热 (Frenzy)</span>：期间自动剔除所有 💀 和 🔧 增加暴富率，且所有奖金 <span className="text-white font-bold">x3 倍</span>！狂热中不计入充能。</p>
                                                 </div>
                                                 <div className="bg-slate-800 p-3 rounded border border-slate-700">
                                                     <h3 className="text-amber-500 text-lg mb-1 font-bold">🏆 累积大奖池 (JACKPOT)</h3>
