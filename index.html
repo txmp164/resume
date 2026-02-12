@@ -123,7 +123,7 @@
         const Utensils = (props) => <IconBase {...props} d={<><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" /></>} />;
         const Smile = (props) => <IconBase {...props} d={<><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9" /></>} />;
         const Hammer = (props) => <IconBase {...props} d={<><path d="M15 12l-8.5 8.5c-.83.83-2.17.83-3 0 0 0 0 0 0 0a2.12 2.12 0 0 1 0-3L12 9"/><path d="M17.64 15L22 10.64"/><path d="M20.91 8.26L15.73 3.08a1 1 0 0 0-1.41 0l-1.42 1.42a1 1 0 0 0 0 1.41l5.66 5.66a1 1 0 0 0 1.41 0l1.42-1.42a1 1 0 0 0 0-1.41z" /></>} />;
-        const HelpCircle = (props) => <IconBase {...props} d={<><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17" /></>} />;
+        const HelpCircle = (props) => <IconBase {...props} d={<><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" cy="17" x2="12.01" y2="17" /></>} />;
         const Gem = (props) => <IconBase {...props} d={<path d="M6 3h12l4 6-10 13L2 9z" />} />;
         const Rocket = (props) => <IconBase {...props} d={<path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09zM12 15l-3-3m1.5 1.5l2-2M2 22l1.5-1.5M9 11l.5-.5M20 4l-4 4m1-4l3 3M15 12s-4-4-8-1l12 12c3-4-1-8-1-8z" />} />;
 
@@ -231,7 +231,7 @@
         // =========================================
         // 核心子组件：老虎机面板
         // =========================================
-        const SlotMachine5x3 = ({ bet, onSpin, isSpinning, result, moodMsg, jackpots, energy, isFrenzy, freeSpins, frenzySpins, teaserCol, winningPositions, bannerText, bannerBoost, isVipMode }) => {
+        const SlotMachine5x3 = ({ bet, onSpin, isSpinning, result, moodMsg, jackpots, energy, isFrenzy, freeSpins, frenzySpins, teaserCol, winningPositions, bannerText, bannerBoost, isVipMode, energyCap }) => {
             const moodColor = moodMsg && moodMsg.includes('+') ? 'text-green-400' : moodMsg && moodMsg.includes('-') ? 'text-red-400' : 'text-purple-400';
             const [animCols, setAnimCols] = useState([false,false,false,false,false]);
             const [displayGrid, setDisplayGrid] = useState(Array.from({length:3},()=>Array.from({length:5},()=> '❓')));
@@ -239,8 +239,14 @@
             const [popCells, setPopCells] = useState(new Set());
             const [activeTeaser, setActiveTeaser] = useState(null);
 
-            const randPool = ['💀','🔧','🍗','☢️','💎','7️⃣','🃏','⭐'];
-            const randPick = () => randPool[Math.floor(Math.random()*randPool.length)];
+            // 基于下注决定随机动画池：这只是视觉效果，逻辑在主组件中
+            const randPick = () => {
+                let pool = ['💀','🔧','🍗','☢️','💎','7️⃣','🃏','⭐'];
+                if (!isVipMode) {
+                    if (bet < 100) pool = ['💀','🔧','🍗','☢️','💎','7️⃣','🃏'];
+                }
+                return pool[Math.floor(Math.random()*pool.length)];
+            };
 
             const startSpinAnim = (c) => {
                 setAnimCols(prev => { const p=[...prev]; p[c]=true; return p; });
@@ -328,7 +334,7 @@
                         <div className="text-center"><div className="text-[10px] text-amber-500 font-bold uppercase">MAJOR</div><div className="text-xl text-amber-400 font-bold leading-none">${jackpots.major.toLocaleString()}</div></div>
                         <div className="text-right"><div className="text-[10px] text-amber-600 font-bold uppercase">GRAND</div><div className="text-2xl text-amber-500 font-bold leading-none">${jackpots.grand.toLocaleString()}</div></div>
                     </div>
-                    <div className="mb-2 flex justify-between items-center px-1 relative z-10"><div className="text-[10px] text-purple-300">ENERGY {energy}/10</div><div className="text-[10px] text-purple-300">FS {freeSpins} / RF {frenzySpins}</div></div>
+                    <div className="mb-2 flex justify-between items-center px-1 relative z-10"><div className="text-[10px] text-purple-300">ENERGY {energy}/{energyCap}</div><div className="text-[10px] text-purple-300">FS {freeSpins} / RF {frenzySpins}</div></div>
                     
                     <div className="relative bg-black/40 p-2 rounded z-10">
                         <div className="middle-frame-overlay"></div>
@@ -372,6 +378,7 @@
           
           const [jackpots, setJackpots] = useState({ mini: 2000, major: 8000, grand: 20000 });
           const [energy, setEnergy] = useState(0);
+          const ENERGY_CAP = 42;
           const [isFrenzy, setIsFrenzy] = useState(false);
           const [frenzySpins, setFrenzySpins] = useState(0);
           const [slotGrid, setSlotGrid] = useState(null);
@@ -475,32 +482,52 @@
               
               setIsSpinning(true); setSlotGrid(null); setSlotMoodMsg(''); setWinningPositions([]); setTeaserCol(null); setSlotBanner(''); setBannerBoost(false);
               
+              // ------------------------------------------
+              // 核心机制：基于注额的分层奖池
+              // ------------------------------------------
               const poolNormal = [{s:'💀',w:20},{s:'🔧',w:25},{s:'🍗',w:20},{s:'☢️',w:15},{s:'💎',w:10},{s:'7️⃣',w:4},{s:'🃏',w:4},{s:'⭐',w:2}];
               const poolVip = [{s:'💀',w:35},{s:'🔧',w:10},{s:'🍗',w:10},{s:'☢️',w:15},{s:'💎',w:15},{s:'7️⃣',w:8},{s:'🃏',w:4},{s:'⭐',w:3}];
-              const poolBase = isVipMode ? poolVip : poolNormal;
               
-              const pool = (isFrenzy || isFrenzySpin) ? poolBase.filter(x => x.s!=='💀' && x.s!=='🔧') : poolBase;
+              // 确定初始基础池
+              let baseSymbols = isVipMode ? poolVip : poolNormal;
+
+              // 非 VIP 时，下注未达 100 一律禁用 ⭐
+              if (!isVipMode && betAmount < 100) {
+                  baseSymbols = baseSymbols.filter(x => x.s !== '⭐');
+              }
+
+              // 应用狂热模式过滤 (剔除垃圾)
+              const pool = (isFrenzy || isFrenzySpin) ? baseSymbols.filter(x => x.s!=='💀' && x.s!=='🔧') : baseSymbols;
+              
+              // 如果因为双重过滤导致池子空了（理论上不会，因为至少有🍗），保底加一个🔧
+              if (pool.length === 0) pool.push({s:'🔧', w:100});
+
               const pick = () => { const total = pool.reduce((a,b)=>a+b.w,0); let r = Math.random()*total; for (let i=0;i<pool.length;i++){ r -= pool[i].w; if (r<=0) return pool[i].s; } return pool[pool.length-1].s; };
               
               const grid = Array.from({length:3},()=>Array.from({length:5},()=>pick()));
               const lines = [ [0,0,0,0,0],[1,1,1,1,1],[2,2,2,2,2],[0,1,2,1,0],[2,1,0,1,2],[0,0,1,2,2],[2,2,1,0,0],[1,0,1,2,1],[1,2,1,0,1],[0,1,1,1,2] ];
               const mul = { '7️⃣': {3:80,4:250,5:1000}, '💎': {3:40,4:100,5:500}, '☢️': {3:20,4:50,5:200}, '🍗': {3:10,4:30,5:100}, '🔧': {3:5,4:15,5:50} };
+              const wildEnabled = isVipMode || betAmount >= 50;
+              const allowed = new Set(['🔧']);
+              if (isVipMode || betAmount >= 50) { allowed.add('🍗'); allowed.add('☢️'); }
+              if (isVipMode || betAmount >= 100) { allowed.add('💎'); allowed.add('7️⃣'); }
               
-              let totalMult = 0; let energyGain = 0; let miniWin=false, majorWin=false, grandWin=false; const wins=[];
+              let totalMult = 0; let energyGain = 0; let miniWin=false, majorWin=false, grandWin=false; const wins=[]; let winningLines=0;
               
               for (let li=0; li<lines.length; li++) {
                   const seq = [grid[lines[li][0]][0], grid[lines[li][1]][1], grid[lines[li][2]][2], grid[lines[li][3]][3], grid[lines[li][4]][4]];
                   let base = null; for (let c=0;c<5;c++){ const sym=seq[c]; if (sym!=='🃏' && sym!=='⭐' && sym!=='💀') { base=sym; break; } }
-                  if (!base) continue; if (!mul[base]) continue;
+                  if (!base) continue; if (!mul[base]) continue; if (!allowed.has(base)) continue;
                   
                   let len=0; let tempWins=[];
-                  for (let c=0;c<5;c++){ const sym=seq[c]; if (sym==='⭐' || sym==='💀') break; if (sym===base || sym==='🃏') { len++; tempWins.push([lines[li][c], c]); } else break; }
+                  for (let c=0;c<5;c++){ const sym=seq[c]; if (sym==='⭐' || sym==='💀') break; if (sym===base || (wildEnabled && sym==='🃏')) { len++; tempWins.push([lines[li][c], c]); } else break; }
                   
                   if (len>=3) { 
                       wins.push(...tempWins);
                       totalMult += mul[base][len] || 0; 
+                      winningLines += 1;
                       
-                      // 核心修复：狂热模式（Frenzy）或剩余狂热次数下，不计入充能
+                      // 狂热模式中不计入充能
                       if (!(isFrenzy || isFrenzySpin)) {
                           energyGain += (len===3?1:len===4?2:3); 
                       }
@@ -537,7 +564,10 @@
                       }, 500);
                   }
 
-                  const lineBet = betAmount/10; let winAmount = Math.floor(totalMult * lineBet); if (isFrenzy || isFrenzySpin) winAmount *= 3;
+                  const lineBet = betAmount/10; 
+                  let frenzyMult = 1; 
+                  if (isFrenzy || isFrenzySpin) { frenzyMult = winningLines > 5 ? 2 : 1.5; }
+                  const winAmount = Math.floor(totalMult * lineBet * frenzyMult);
                   
                   if (miniWin) { setPlayer(p=>({...p, money: p.money + jackpots.mini })); setJackpots(prev=>({...prev, mini: JACKPOT_BASES.mini })); setSlotBanner('MINI JACKPOT!'); setBannerBoost(true); setTimeout(()=>setBannerBoost(false),600); }
                   else if (majorWin) { setPlayer(p=>({...p, money: p.money + jackpots.major })); setJackpots(prev=>({...prev, major: JACKPOT_BASES.major })); setSlotBanner('MAJOR JACKPOT!'); setBannerBoost(true); setTimeout(()=>setBannerBoost(false),600); }
@@ -546,18 +576,17 @@
                   if (winAmount>0) { 
                       setPlayer(p => ({ ...p, money: p.money + winAmount, mood: Math.min(p.maxMood, p.mood + 5) })); 
                       setSlotMoodMsg('心情 +5'); 
-                      addLog(`🎰 中奖！获得 $${winAmount}${isFrenzy || isFrenzySpin ? ' (狂热 x3)' : ''}`, 'success'); 
+                      addLog(`🎰 中奖！获得 $${winAmount}${(isFrenzy || isFrenzySpin) ? ` (狂热 x${frenzyMult})` : ''}` , 'success'); 
                   } else { 
                       setPlayer(p => ({ ...p, mood: Math.max(0, p.mood - 2) })); 
                       setSlotMoodMsg('心情 -2'); 
                       addLog('🎰 未中奖。', 'error'); 
                   }
                   
-                  // 处理能量逻辑
                   if (!(isFrenzy || isFrenzySpin)) {
                       const newEnergy = energy + energyGain; 
-                      if (newEnergy >= 10) { 
-                          setEnergy(0); // 触发后重置为0
+                      if (newEnergy >= ENERGY_CAP) { 
+                          setEnergy(0); 
                           setFrenzySpins(prev=>prev + 5); setIsFrenzy(true); 
                           if (!miniWin && !majorWin && !grandWin) { 
                               setTimeout(() => { setSlotBanner('RADIATION FRENZY!'); setBannerBoost(true); setTimeout(()=>setBannerBoost(false),600); }, 600);
@@ -566,7 +595,6 @@
                           setEnergy(newEnergy); setIsFrenzy(false); 
                       }
                   } else {
-                      // 如果在狂热中且次数用完，重置狂热标志
                       if (frenzySpins === 0) setIsFrenzy(false);
                   }
               }, baseDelay);
@@ -594,6 +622,8 @@
 
           useEffect(() => { if (scene === 'intro') { if (introStep < introTexts.length) { const timer = setTimeout(() => { setIntroStep(prev => prev + 1); }, 1500); return () => clearTimeout(timer); } } }, [scene, introStep]);
           useEffect(() => { if (introEndRef.current) { introEndRef.current.scrollIntoView({ behavior: 'smooth' }); } }, [introStep]);
+
+          const inSpecialMode = freeSpins > 0 || frenzySpins > 0 || isFrenzy;
 
           return (
             <div className={`min-h-screen bg-neutral-900 flex items-center justify-center p-4 font-mono text-slate-200 select-none ${isShake ? 'shake-anim' : ''}`}>
@@ -768,14 +798,31 @@
                                                             setIsVipMode(next);
                                                             setBetAmount(next ? 500 : 50); 
                                                         }} 
-                                                        disabled={isSpinning || freeSpins > 0 || frenzySpins > 0 || isFrenzy}
-                                                        className={`px-6 py-1.5 font-bold text-lg rounded border transition-colors ${(isSpinning || freeSpins > 0 || frenzySpins > 0 || isFrenzy) ? 'opacity-50 cursor-not-allowed grayscale ' : ''}${isVipMode ? 'bg-red-900/50 border-red-500 text-red-400 shadow-[0_0_10px_rgba(220,38,38,0.5)]' : 'bg-slate-800 border-slate-600 text-slate-400'}`}
+                                                        disabled={inSpecialMode || isSpinning}
+                                                        className={`px-6 py-1.5 font-bold text-lg rounded border transition-colors ${(inSpecialMode || isSpinning) ? 'opacity-50 cursor-not-allowed grayscale ' : ''}${isVipMode ? 'bg-red-900/50 border-red-500 text-red-400 shadow-[0_0_10px_rgba(220,38,38,0.5)]' : 'bg-slate-800 border-slate-600 text-slate-400'}`}
                                                     >
                                                         {isVipMode ? '🔥 VIP高危模式' : '普通模式'}
                                                     </button>
                                                     <div className="w-8"></div>
                                                 </div>
                                                 {isVipMode && <div className="text-[10px] text-red-500 mb-2 mt-[-8px]">极品翻倍 | 骷髅剧增 | 下注上限 $5000</div>}
+                                                <div className="text-[12px] text-slate-400 px-4 mb-2 flex flex-wrap items-center gap-1">
+                                                    <span className="text-slate-500">奖励格子：</span>
+                                                    {(() => {
+                                                        const all = ['💀','🔧','🍗','☢️','💎','7️⃣','🃏','⭐'];
+                                                        const allowed = new Set(['💀','🔧']);
+                                                        if (isVipMode || betAmount >= 50) { allowed.add('🍗'); allowed.add('☢️'); allowed.add('🃏'); }
+                                                        if (isVipMode || betAmount >= 100) { allowed.add('💎'); allowed.add('7️⃣'); allowed.add('⭐'); }
+                                                        const lit = all.filter(s => allowed.has(s));
+                                                        const dim = all.filter(s => !allowed.has(s));
+                                                        return (
+                                                            <>
+                                                                <span className="text-yellow-400 mr-2">{lit.map(s => (<span key={`l-${s}`} className="mx-1">{s}</span>))}</span>
+                                                                <span className="text-slate-500">{dim.map(s => (<span key={`d-${s}`} className="mx-1 opacity-40">{s}</span>))}</span>
+                                                            </>
+                                                        );
+                                                    })()}
+                                                </div>
                                                 
                                                 <SlotMachine5x3 
                                                     bet={betAmount}
@@ -793,13 +840,14 @@
                                                     bannerText={slotBanner}
                                                     bannerBoost={bannerBoost}
                                                     isVipMode={isVipMode}
+                                                    energyCap={ENERGY_CAP}
                                                 />
                                                 <div className="flex gap-4 mt-2 w-full justify-center">
-                                                    <button disabled={isSpinning || freeSpins > 0 || frenzySpins > 0 || isFrenzy} onClick={() => setBetAmount(Math.max(isVipMode ? 500 : 10, betAmount - (isVipMode ? 100 : 10)))} className={`bg-slate-700 px-4 py-2 rounded border border-slate-500 text-xl ${(isSpinning || freeSpins > 0 || frenzySpins > 0 || isFrenzy) ? 'opacity-50 cursor-not-allowed' : ''}`}>-</button>
+                                                    <button disabled={inSpecialMode || isSpinning} onClick={() => setBetAmount(Math.max(isVipMode ? 500 : 10, betAmount - (isVipMode ? 100 : 10)))} className={`bg-slate-700 px-4 py-2 rounded border border-slate-500 text-xl ${(inSpecialMode || isSpinning) ? 'opacity-50 cursor-not-allowed' : ''}`}>-</button>
                                                     <div className={`bg-black/50 px-6 py-2 rounded text-xl border border-slate-600 w-32 text-center ${isVipMode ? 'text-red-500' : 'text-yellow-500'}`}>${betAmount}</div>
-                                                    <button disabled={isSpinning || freeSpins > 0 || frenzySpins > 0 || isFrenzy} onClick={() => setBetAmount(Math.min(player.money, betAmount + (isVipMode ? 100 : 10)))} className={`bg-slate-700 px-4 py-2 rounded border border-slate-500 text-xl ${(isSpinning || freeSpins > 0 || frenzySpins > 0 || isFrenzy) ? 'opacity-50 cursor-not-allowed' : ''}`}>+</button>
+                                                    <button disabled={inSpecialMode || isSpinning} onClick={() => setBetAmount(Math.min(player.money, betAmount + (isVipMode ? 100 : 10)))} className={`bg-slate-700 px-4 py-2 rounded border border-slate-500 text-xl ${(inSpecialMode || isSpinning) ? 'opacity-50 cursor-not-allowed' : ''}`}>+</button>
                                                 </div>
-                                                <button disabled={isSpinning || freeSpins > 0 || frenzySpins > 0 || isFrenzy} onClick={() => setBetAmount(Math.min(player.money, isVipMode ? 5000 : 500))} className={`text-sm mt-2 underline ${(isSpinning || freeSpins > 0 || frenzySpins > 0 || isFrenzy) ? 'text-slate-700 cursor-not-allowed' : 'text-slate-500'}`}>MAX BET (${isVipMode ? 5000 : 500})</button>
+                                                <button disabled={inSpecialMode || isSpinning} onClick={() => setBetAmount(Math.min(player.money, isVipMode ? 5000 : 500))} className={`text-sm mt-2 underline ${(inSpecialMode || isSpinning) ? 'text-slate-700 cursor-not-allowed' : 'text-slate-500'}`}>MAX BET (${isVipMode ? 5000 : 500})</button>
                                             </div>
                                         )}
                                     </div>
@@ -815,27 +863,51 @@
                                                 <button onClick={() => setShowCasinoRules(false)} className="text-slate-500 hover:text-white"><LogOut size={24}/></button>
                                             </div>
                                             <div className="flex-1 overflow-y-auto no-scrollbar space-y-3 pb-4 text-sm text-slate-300">
-                                                <div className="bg-slate-800 p-3 rounded border border-slate-700">
-                                                    <h3 className="text-yellow-500 text-lg mb-1 font-bold">🎰 基础连线</h3>
-                                                    <p>机器内含 10 条固定派彩线。必须从 <span className="text-white font-bold">最左侧第1列</span> 开始，向右连续出现 3、4 或 5 个相同符号即中奖。(多条线奖金叠加计算)</p>
+                                                <div className="bg-slate-800 p-3 rounded border border-red-500/50">
+                                                    <h3 className="text-red-400 text-lg mb-1 font-bold">🎰 飞天大皇宫：爆金规则说明 (Instruction)</h3>
+                                                    <p className="text-slate-300">在开始游戏前，请花一分钟了解以下规则，以优化您的投注策略。</p>
                                                 </div>
                                                 <div className="bg-slate-800 p-3 rounded border border-slate-700">
-                                                    <h3 className="text-blue-400 text-lg mb-1 font-bold">✨ 特殊符号</h3>
-                                                    <p className="mb-1"><span className="text-white">🃏 百搭 (Wild):</span> 万能符，可替代除 ⭐ 和 💀 外的任何符号凑齐连线。</p>
-                                                    <p className="mb-1"><span className="text-white">⭐ 分散 (Scatter):</span> 无视派彩线，屏幕任意位置出现 3/4/5 个，直接奖励 <span className="text-cyan-400">5/10/20次 免费摇奖</span>。</p>
-                                                    <p><span className="text-white">💀 陷阱 (Trap):</span> 剧毒污染！遇到立刻中断当前派彩连线，毫无价值。</p>
+                                                    <h3 className="text-yellow-500 text-lg mb-1 font-bold">📌 基础术语解释</h3>
+                                                    <p className="mb-1">老虎机共有 5 个转轴。当相同的符号在一条有效中奖线上，从最左侧起连续出现时，即视为中奖。</p>
+                                                    <p className="mb-0">3连：前 3 个转轴出现相同符号。</p>
+                                                    <p className="mb-0">4连：前 4 个转轴出现相同符号。</p>
+                                                    <p>5连：全部 5 个转轴出现相同符号（通常触发该符号的最高奖励）。</p>
                                                 </div>
                                                 <div className="bg-slate-800 p-3 rounded border border-slate-700">
-                                                    <h3 className="text-purple-400 text-lg mb-1 font-bold">☢️ 连击充能 & 狂热</h3>
-                                                    <p>每次连线均可获得能量：3连得1点，4连得2点，5连得3点。<br/>能量满 10 点触发 <span className="text-purple-300 font-bold">5次 放射狂热 (Frenzy)</span>：期间自动剔除所有 💀 和 🔧 增加暴富率，且所有奖金 <span className="text-white font-bold">x3 倍</span>！狂热中不计入充能。</p>
+                                                    <h3 className="text-blue-400 text-lg mb-1 font-bold">一、 投注等级与符号解锁系统</h3>
+                                                    <p className="mb-1">根据单次投注额度（Bet）决定可参与计奖的符号种类：</p>
+                                                    <p className="mb-0">基础 (&lt; 50)：<code>💀</code>(障碍) / <code>🔧</code>(扳手) — 基础游戏模式</p>
+                                                    <p className="mb-0">进阶 (50 - 99)：新增 <code>🍗</code>(火鸡) / <code>☢️</code>(放射)，激活 <code>🃏</code>(万能牌)</p>
+                                                    <p>尊享 (≥ 100 / VIP)：全符号解锁（含 <code>💎</code> / <code>7️⃣</code> / <code>⭐</code>），开启最高倍率奖励</p>
                                                 </div>
                                                 <div className="bg-slate-800 p-3 rounded border border-slate-700">
-                                                    <h3 className="text-amber-500 text-lg mb-1 font-bold">🏆 累积大奖池 (JACKPOT)</h3>
-                                                    <p>凑齐完美的 5连 ☢️ / 💎 / 7️⃣，将分别直接拿走上方对应的 MINI / MAJOR / GRAND 累积大奖池的全部奖金！</p>
+                                                    <h3 className="text-amber-400 text-lg mb-1 font-bold">二、 赔率表 (Paylines & Payouts)</h3>
+                                                    <p className="mb-1">奖金计算公式：<span className="text-white">总奖金 = (中奖倍数之和) × (当前投注 ÷ 10)</span></p>
+                                                    <p className="mb-0"><span className="text-slate-400">符号 / 3连 / 4连 / 5连</span></p>
+                                                    <p className="mb-0">幸运 <code>7️⃣</code>：80 / 250 / 1000</p>
+                                                    <p className="mb-0">璀璨 <code>💎</code>：40 / 100 / 500</p>
+                                                    <p className="mb-0">放射 <code>☢️</code>：20 / 50 / 200</p>
+                                                    <p className="mb-0">美味 <code>🍗</code>：10 / 30 / 100</p>
+                                                    <p>扳手 <code>🔧</code>：5 / 15 / 50</p>
                                                 </div>
-                                                <div className="bg-slate-800 p-3 rounded border border-red-900/50 shadow-[inset_0_0_10px_rgba(220,38,38,0.2)]">
-                                                    <h3 className="text-red-500 text-lg mb-1 font-bold">🔥 VIP 高危模式</h3>
-                                                    <p>最低下注 $500。垃圾符号(🔧/🍗)减半，陷阱(💀)激增！但极品(7️⃣/💎)与免费(⭐)爆率大幅提升！富贵险中求。</p>
+                                                <div className="bg-slate-800 p-3 rounded border border-slate-700">
+                                                    <h3 className="text-green-400 text-lg mb-1 font-bold">三、 核心玩法规则</h3>
+                                                    <p className="mb-0">连线判定：共有 10 条黄金中奖线，符号必须自左向右连续排列。</p>
+                                                    <p className="mb-0">🃏 万能牌 (Wild)：可替代除 <code>💀</code> 和 <code>⭐</code> 之外的任意符号（仅在下注≥50时生效）。</p>
+                                                    <p className="mb-0">💀 障碍物 (Blocker)：无法参与连线，且会中断其他符号的连续排列。</p>
+                                                    <p>⭐ 散射牌 (Scatter)：无需在连线上，只要屏幕任意位置集齐即可奖励。</p>
+                                                </div>
+                                                <div className="bg-slate-800 p-3 rounded border border-slate-700">
+                                                    <h3 className="text-purple-400 text-lg mb-1 font-bold">四、 奖励模式 (Bonus Features)</h3>
+                                                    <p className="mb-1">1. 免费摇奖 (Free Spins)：当屏幕任意位置出现 <code>⭐</code> 时，触发对应次数的免费旋转。</p>
+                                                    <p className="mb-0">3个 <code>⭐</code>：5次</p>
+                                                    <p className="mb-0">4个 <code>⭐</code>：10次</p>
+                                                    <p>5个 <code>⭐</code>：20次</p>
+                                                    <p className="mb-1">2. 放射狂热 (Fever Mode)：</p>
+                                                    <p className="mb-0">能量积攒：3连 +1点，4连 +2点，5连 +3点。</p>
+                                                    <p className="mb-0">进入狂热：能量槽满 42点 自动开启 5次 狂热旋转。</p>
+                                                    <p>狂热特权：剔除低分（不再出现 <code>💀</code> 和 <code>🔧</code>），奖金乘数动态加成：基础 ×1.5；若该轮中奖线超过 5 条则临时提升至 ×2。注：狂热期间能量槽不再增长。</p>
                                                 </div>
                                             </div>
                                             <button onClick={() => setShowCasinoRules(false)} className="w-full flex-none bg-slate-700 hover:bg-slate-600 text-white py-3 rounded text-xl border-b-4 border-slate-900 active:border-b-0 active:translate-y-1 transition-all mt-2">
