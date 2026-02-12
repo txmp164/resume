@@ -142,8 +142,8 @@
         const ITEMS = {
           medkit:   { id: 'medkit', name: '急救包', type: 'consumable', cost: 60, effect: 'heal', value: 40, desc: '恢复40生命', rarity: 'white' },
           food:     { id: 'food', name: '压缩饼干', type: 'consumable', cost: 30, effect: 'satiety', value: 40, desc: '恢复40饱食', rarity: 'white' },
-          alcohol:  { id: 'alcohol', name: '陈年威士忌', type: 'consumable', cost: 80, effect: 'mood', value: 50, desc: '恢复50心情,减少10San', rarity: 'green' },
-          pills:    { id: 'pills', name: '镇静剂', type: 'consumable', cost: 120, effect: 'sanity', value: 40, desc: '恢复40理智(San)', rarity: 'blue' },
+          alcohol:  { id: 'alcohol', name: '陈年威士忌', type: 'consumable', cost: 80, effect: 'mood', value: 50, desc: '恢复50心情，减少10理智', rarity: 'green' },
+          pills:    { id: 'pills', name: '镇静剂', type: 'consumable', cost: 120, effect: 'sanity', value: 40, desc: '恢复40理智', rarity: 'blue' },
           ammo_box: { id: 'ammo_box', name: '自制弹药箱', type: 'consumable', cost: 0, effect: 'buff_atk', value: 10, desc: '伤害+10 (制造)', rarity: 'green' },
         };
 
@@ -157,15 +157,42 @@
         };
 
         const RELICS = {
-          vampire:    { id: 'vampire', name: '吸血鬼之牙', desc: '击杀敌人回复 5 HP', rarity: 'purple', type: 'relic' },
-          cat:        { id: 'cat', name: '招财猫', desc: '撤离结算金币 +20%', rarity: 'purple', type: 'relic' },
-          adrenaline: { id: 'adrenaline', name: '肾上腺素', desc: 'HP < 30% 时攻击力翻倍', rarity: 'purple', type: 'relic' },
+          vampire:    { id: 'vampire', name: '吸血鬼之牙', desc: '击杀敌人恢复 5 HP', rarity: 'purple', type: 'relic', val: 1500 },
+          cat:        { id: 'cat', name: '招财猫', desc: '物品出售价格 +20%', rarity: 'purple', type: 'relic', val: 1500 },
+          adrenaline: { id: 'adrenaline', name: '肾上腺素', desc: 'HP < 30% 时造成双倍伤害', rarity: 'purple', type: 'relic', val: 1500 },
         };
 
         const FACILITIES = {
-          medical:   { id: 'medical', name: '战地医疗站', cost: { '螺丝组件': 10, '废旧钢材': 5 }, desc: '撤离后自动恢复翻倍' },
-          workbench: { id: 'workbench', name: '精密工作台', cost: { '线材组件': 5, '蓄电池': 1 }, desc: '解锁弹药制造' },
-          kitchen:   { id: 'kitchen', name: '野战厨房', cost: { '神秘肉罐头': 3 }, desc: '饱食度上限 +50' },
+          medical: {
+            id: 'medical',
+            name: '战地医疗站',
+            maxLevel: 3,
+            levels: [
+              { cost: { '螺丝组件': 10, '废旧钢材': 10 }, effect: 30, desc: 'Lv1: 基础包扎 (撤离回血 30)' },
+              { cost: { '粗糙布料': 10, '线材组件': 5 }, effect: 60, desc: 'Lv2: 无菌处理 (撤离回血 60)' },
+              { cost: { '完整抗生素': 1, '蓄电池': 1 }, effect: 100, desc: 'Lv3: 全自动手术舱 (撤离回血 100)' }
+            ]
+          },
+          recycling: {
+            id: 'recycling',
+            name: '物资回收中心',
+            maxLevel: 3,
+            levels: [
+              { cost: { '螺丝组件': 15, '好用的钳子': 1 }, effect: 0.10, desc: 'Lv1: 简易分类 (出售价格 +10%)' },
+              { cost: { '线材组件': 10, '润滑油': 3 }, effect: 0.20, desc: 'Lv2: 精细拆解 (出售价格 +20%)' },
+              { cost: { '优质钢材': 2, '蓄电池': 2 }, effect: 0.35, desc: 'Lv3: 熔炼重铸 (出售价格 +35%)' }
+            ]
+          },
+          kitchen: {
+            id: 'kitchen',
+            name: '野战厨房',
+            maxLevel: 3,
+            levels: [
+              { cost: { '废旧钢材': 5, '神秘肉罐头': 3 }, effect: 120, desc: 'Lv1: 篝火烤肉 (饱食上限 120)' },
+              { cost: { '燃气瓶': 2, '未知酱料': 5 }, effect: 150, desc: 'Lv2: 便携灶台 (饱食上限 150)' },
+              { cost: { '优质钢材': 3, '火药': 2 }, effect: 200, desc: 'Lv3: 分子料理机 (饱食上限 200)' }
+            ]
+          }
         };
 
         const STORY_EVENTS = [
@@ -197,15 +224,54 @@
         };
 
         const LOOT_DB = [
-          { name: '螺丝组件', val: 15, rarity: 'white', type: 'loot' }, { name: '废旧钢材', val: 25, rarity: 'white', type: 'loot' },
-          { name: '神秘肉罐头', val: 30, rarity: 'white', type: 'loot' }, { name: '粗糙布料', val: 50, rarity: 'green', type: 'loot' },
-          { name: '线材组件', val: 65, rarity: 'green', type: 'loot' }, { name: '未知酱料', val: 80, rarity: 'green', type: 'loot' },
-          { name: '好用的钳子', val: 150, rarity: 'blue', type: 'loot' }, { name: '润滑油', val: 180, rarity: 'blue', type: 'loot' },
-          { name: '燃气瓶', val: 220, rarity: 'blue', type: 'loot' }, { name: '优质钢材', val: 400, rarity: 'purple', type: 'loot' },
-          { name: '蓄电池', val: 550, rarity: 'purple', type: 'loot' }, { name: '火药', val: 600, rarity: 'purple', type: 'loot' },
-          { name: '求生急救包', val: 1000, rarity: 'gold', type: 'loot' }, { name: '完整抗生素', val: 1200, rarity: 'gold', type: 'loot' },
-          { name: '求生无线电发射器', val: 5000, rarity: 'special', type: 'loot' },
-          { ...RELICS.vampire, val: 800 }, { ...RELICS.cat, val: 800 }, { ...RELICS.adrenaline, val: 800 },
+          // --- 基础材料 (保留用于设施升级) ---
+          { name: '螺丝组件', val: 15, rarity: 'white', type: 'loot' },
+          { name: '废旧钢材', val: 25, rarity: 'white', type: 'loot' },
+          { name: '神秘肉罐头', val: 30, rarity: 'white', type: 'loot' },
+          { name: '粗糙布料', val: 50, rarity: 'green', type: 'loot' },
+          { name: '线材组件', val: 65, rarity: 'green', type: 'loot' },
+          { name: '未知酱料', val: 80, rarity: 'green', type: 'loot' },
+          { name: '好用的钳子', val: 150, rarity: 'blue', type: 'loot' },
+          { name: '润滑油', val: 180, rarity: 'blue', type: 'loot' },
+          { name: '燃气瓶', val: 220, rarity: 'blue', type: 'loot' },
+          { name: '优质钢材', val: 400, rarity: 'purple', type: 'loot' },
+          { name: '蓄电池', val: 550, rarity: 'purple', type: 'loot' },
+          { name: '火药', val: 600, rarity: 'purple', type: 'loot' },
+          { name: '求生急救包', val: 1000, rarity: 'gold', type: 'loot' },
+          { name: '完整抗生素', val: 1200, rarity: 'gold', type: 'loot' },
+
+          // --- 新增：废土风味杂物 (Neta Fallout & Cyberpunk) ---
+          
+          // [白色-垃圾级]：随处可见的废品
+          { name: '弯曲的铁罐', val: 5, rarity: 'white', type: 'loot', desc: '踢起来哐当作响。' },
+          { name: '烧焦的二极管', val: 10, rarity: 'white', type: 'loot', desc: '散发着臭氧味。' },
+          { name: '生锈的瓶盖', val: 8, rarity: 'white', type: 'loot', desc: '也许曾经是货币？' },
+
+          // [绿色-优良级]：稍微有点价值的回收品
+          { name: '核子可乐瓶盖', val: 60, rarity: 'green', type: 'loot', desc: '鲜艳的红色，收藏家的最爱。' },
+          { name: '真空电子管', val: 90, rarity: 'green', type: 'loot', desc: '脆弱但精美的旧时代元件。' },
+          { name: '损坏的终端机', val: 120, rarity: 'green', type: 'loot', desc: '屏幕已经碎了。' },
+
+          // [蓝色-稀有级]：有用的电子元件
+          { name: '生物识别扫描仪', val: 250, rarity: 'blue', type: 'loot', desc: '还能读取指纹数据。' },
+          { name: '战前全息游戏卡', val: 300, rarity: 'blue', type: 'loot', desc: '上面写着《格罗格纳克野蛮人》。' },
+          { name: '量子可乐瓶盖', val: 350, rarity: 'blue', type: 'loot', desc: '在这个黑暗的世界里发出幽蓝的光。' },
+
+          // [紫色-史诗级]：高科技能源与核心
+          { name: '微型核融合核心', val: 800, rarity: 'purple', type: 'loot', desc: '即使过了百年，能量依然澎湃。' },
+          { name: '隐形小子原型机', val: 900, rarity: 'purple', type: 'loot', desc: '光学迷彩发生器，可惜没电了。' },
+          
+          // [金色-传说级]：避难所科技结晶
+          { name: '避难所科技午餐盒', val: 1800, rarity: 'gold', type: 'loot', desc: '保存完好，里面或许有惊喜？' },
+          { name: 'G.E.C.K. 碎片', val: 2500, rarity: 'gold', type: 'loot', desc: '伊甸园创造器的残片，无价之宝。' },
+
+          // [特殊-红色神话级]：断层式高价
+          { name: '特别的磁带', val: 50000, rarity: 'special', type: 'loot', desc: '普通的磁带...但上面手写着“Day 1 源代码备份”。' },
+          
+          // 遗物 (直接引用，使用 RELICS 中定义的 val: 1500)
+          { ...RELICS.vampire },
+          { ...RELICS.cat },
+          { ...RELICS.adrenaline },
         ];
 
         const EXCHANGE_ASSETS = [
@@ -441,7 +507,7 @@
             hp: 100, maxHp: 100, satiety: 100, maxSatiety: 100,
             mood: 100, maxMood: 100, sanity: 100, maxSanity: 100,
             money: 500, weapon: GEAR.knife, armor: GEAR.clothes,
-            relics: [], facilities: {}, inventory: [], storage: [],
+            relics: [], facilities: { medical: 0, recycling: 0, kitchen: 0 }, inventory: [], storage: [],
             day: 1,
           });
 
@@ -460,26 +526,27 @@
           const removeItemsFromStorage = (itemName, count) => { let removed = 0; return player.storage.filter(item => { if (item.name === itemName && removed < count) { removed++; return false; } return true; }); };
 
           const upgradeFacility = (facId) => {
-            const facility = FACILITIES[facId]; if (player.facilities[facId]) return;
-            let canBuild = true; for (const [name, count] of Object.entries(facility.cost)) { if (countItemInStorage(name) < count) canBuild = false; }
+            const facility = FACILITIES[facId];
+            const currentLevel = player.facilities[facId] || 0;
+            if (currentLevel >= facility.maxLevel) { addLog('该设施已升至最高级！'); return; }
+            const nextLevelConfig = facility.levels[currentLevel];
+            let canBuild = true;
+            for (const [name, count] of Object.entries(nextLevelConfig.cost)) { if (countItemInStorage(name) < count) canBuild = false; }
             if (canBuild) {
               let newStorage = [...player.storage];
-              for (const [name, count] of Object.entries(facility.cost)) { let removed = 0; newStorage = newStorage.filter(item => { if (item.name === name && removed < count) { removed++; return false; } return true; }); }
-              const newFacilities = { ...player.facilities, [facId]: true };
+              for (const [name, count] of Object.entries(nextLevelConfig.cost)) {
+                let removed = 0;
+                newStorage = newStorage.filter(item => { if (item.name === name && removed < count) { removed++; return false; } return true; });
+              }
+              const newFacilities = { ...player.facilities, [facId]: currentLevel + 1 };
               let updates = { storage: newStorage, facilities: newFacilities };
-              if (facId === 'kitchen') { updates.maxSatiety = 150; updates.satiety = 150; }
-              setPlayer(prev => ({ ...prev, ...updates })); addLog(`设施建造成功：${facility.name}`, 'success');
-            } else { addLog('材料不足，无法建造！', 'error'); }
+              if (facId === 'kitchen') { const newCap = nextLevelConfig.effect; updates.maxSatiety = newCap; updates.satiety = newCap; }
+              setPlayer(prev => ({ ...prev, ...updates }));
+              addLog(`设施升级成功：${facility.name} (Lv.${currentLevel + 1})`, 'success');
+            } else { addLog('升级材料不足！', 'error'); }
           };
 
-          const craftAmmo = () => {
-            const costMoney = 50; const material = '废旧钢材';
-            if (player.money >= costMoney && countItemInStorage(material) >= 1) {
-              const newStorage = removeItemsFromStorage(material, 1);
-              setPlayer(prev => ({ ...prev, money: prev.money - costMoney, storage: [...newStorage, { ...ITEMS.ammo_box, type: 'consumable' }] }));
-              addLog('制造了 自制弹药箱', 'success');
-            } else { addLog('制造材料或资金不足 ($50 + 废旧钢材)', 'error'); }
-          };
+          
 
           const settleExchange = () => {
             const day = player.day;
@@ -561,6 +628,7 @@
 
           const handleShopClick = (item, type) => {
             const key = item.id || item.name;
+            if (type === 'gear' && (player.ownedGear || []).includes(item.id)) { addLog('已购买该装备。'); return; }
             if (confirmId === key) {
               if (type === 'gear') buyGear(item); 
               else if (type === 'material') buyMaterial(item);
@@ -708,22 +776,23 @@
           };
 
           const buyItem = (item) => { if (player.money >= item.cost) { setPlayer(prev => ({ ...prev, money: prev.money - item.cost, storage: [...prev.storage, { ...item, type: 'consumable' }] })); addLog(`购买了 ${item.name}`, 'success'); } else { addLog('资金不足！', 'error'); } };
-          const buyMaterial = (item) => { const price = Math.floor((item.val || 0) * 2); if (player.money >= price) { setPlayer(prev => ({ ...prev, money: prev.money - price, storage: [...prev.storage, { ...item }] })); addLog(`购买材料 ${item.name}，花费 $${price}`, 'success'); } else { addLog('资金不足！', 'error'); } };
-          const buyGear = (gear) => { if (player.money >= gear.cost) { setPlayer(prev => ({ ...prev, money: prev.money - gear.cost, [gear.type]: gear })); addLog(`装备了 ${gear.name}`, 'success'); } else { addLog('资金不足！', 'error'); } };
-          const sellItem = (index) => { const item = player.storage[index]; if (!item) return; const sellPrice = item.val || Math.floor(item.cost / 2) || 1; const catRelic = player.relics.find(r => r.id === 'cat'); const finalPrice = catRelic ? Math.floor(sellPrice * 1.2) : sellPrice; setPlayer(prev => ({ ...prev, money: prev.money + finalPrice, storage: prev.storage.filter((_, i) => i !== index) })); addLog(`出售 ${item.name}，获得 $${finalPrice}`, 'success'); };
-          const groupItems = (items) => { const map = new Map(); items.forEach(item => { const key = item.id || `${item.type}:${item.name}`; if (!map.has(key)) map.set(key, { key, item, count: 0, totalVal: 0 }); const g = map.get(key); g.count += 1; g.totalVal += item.val || 0; }); return Array.from(map.values()); };
-          const sellOneByKey = (key) => { const idx = player.storage.findIndex(i => (i.id || `${i.type}:${i.name}`) === key); if (idx === -1) return; const item = player.storage[idx]; const sellPrice = item.val || Math.floor(item.cost / 2) || 1; const catRelic = player.relics.find(r => r.id === 'cat'); const finalPrice = catRelic ? Math.floor(sellPrice * 1.2) : sellPrice; setPlayer(prev => ({ ...prev, money: prev.money + finalPrice, storage: prev.storage.filter((_, i) => i !== idx) })); addLog(`出售 ${item.name}，获得 $${finalPrice}`, 'success'); };
+          const buyMaterial = (item) => { const price = Math.floor((item.val || 0) * 5); if (player.money >= price) { setPlayer(prev => ({ ...prev, money: prev.money - price, storage: [...prev.storage, { ...item }] })); addLog(`购买材料 ${item.name}，花费 $${price}`, 'success'); } else { addLog('资金不足！', 'error'); } };
+          const buyGear = (gear) => { if ((player.ownedGear || []).includes(gear.id)) { addLog('已购买该装备。'); return; } if (player.money >= gear.cost) { setPlayer(prev => ({ ...prev, money: prev.money - gear.cost, [gear.type]: gear, ownedGear: [...(prev.ownedGear || []), gear.id] })); addLog(`装备了 ${gear.name}`, 'success'); } else { addLog('资金不足！', 'error'); } };
+          const getSellMultiplier = () => { const lvl = player.facilities.recycling || 0; if (lvl === 0) return 1; return 1 + FACILITIES.recycling.levels[lvl - 1].effect; };
+          const sellItem = (index) => { const item = player.storage[index]; if (!item) return; const sellMultiplier = getSellMultiplier(); let basePrice = item.val || Math.floor(item.cost / 2) || 1; const catRelic = player.relics.find(r => r.id === 'cat'); if (catRelic) basePrice = Math.floor(basePrice * 1.2); const finalPrice = Math.floor(basePrice * sellMultiplier); setPlayer(prev => ({ ...prev, money: prev.money + finalPrice, storage: prev.storage.filter((_, i) => i !== index) })); addLog(`出售 ${item.name}，获得 $${finalPrice}`, 'success'); };
+          const groupItems = (items) => { const map = new Map(); items.forEach(item => { const key = item.id || `${item.type}:${item.name}`; if (!map.has(key)) map.set(key, { key, item, count: 0, totalVal: 0 }); const g = map.get(key); g.count += 1; g.totalVal += item.val || 0; }); const arr = Array.from(map.values()); const wt = (t) => t==='consumable'?0:(t==='relic'?1:2); arr.sort((a,b)=>{ const ta=wt(a.item.type||'loot'), tb=wt(b.item.type||'loot'); if(ta!==tb) return ta-tb; return (a.item.name||'').localeCompare(b.item.name||''); }); return arr; };
+          const sellOneByKey = (key) => { const idx = player.storage.findIndex(i => (i.id || `${i.type}:${i.name}`) === key); if (idx === -1) return; const item = player.storage[idx]; const sellMultiplier = getSellMultiplier(); let basePrice = item.val || Math.floor(item.cost / 2) || 1; const catRelic = player.relics.find(r => r.id === 'cat'); if (catRelic) basePrice = Math.floor(basePrice * 1.2); const finalPrice = Math.floor(basePrice * sellMultiplier); setPlayer(prev => ({ ...prev, money: prev.money + finalPrice, storage: prev.storage.filter((_, i) => i !== idx) })); addLog(`出售 ${item.name}，获得 $${finalPrice}`, 'success'); };
           const useOneByKey = (key) => { const idx = player.storage.findIndex(i => (i.id || `${i.type}:${i.name}`) === key); if (idx === -1) return; const item = player.storage[idx]; if (item.type === 'relic') { if (player.relics.some(r => r.id === item.id)) { addLog('已装备该遗物。'); return; } setPlayer(prev => ({ ...prev, relics: [...prev.relics, item], storage: prev.storage.filter((_, i) => i !== idx) })); addLog(`装备遗物：${item.name}`, 'success'); return; } if (item.type !== 'consumable') return; let used = false; let newPlayer = { ...player }; if (item.effect === 'heal' && player.hp < player.maxHp) { newPlayer.hp = Math.min(player.maxHp, player.hp + item.value); used = true; } else if (item.effect === 'satiety' && player.satiety < player.maxSatiety) { newPlayer.satiety = Math.min(player.maxSatiety, player.satiety + item.value); used = true; } else if (item.effect === 'mood' && player.mood < player.maxMood) { newPlayer.mood = Math.min(player.maxMood, player.mood + item.value); newPlayer.sanity = Math.max(0, player.sanity - 10); used = true; } else if (item.effect === 'sanity' && player.sanity < player.maxSanity) { newPlayer.sanity = Math.min(player.maxSanity, player.sanity + item.value); used = true; } if (used) { newPlayer.storage = player.storage.filter((_, i) => i !== idx); setPlayer(newPlayer); addLog(`使用了 ${item.name}。`, 'success'); } };
-          const getMaterialNameSet = () => { const names = new Set(); Object.values(FACILITIES).forEach(f => { Object.keys(f.cost).forEach(n => names.add(n)); }); return names; };
+          const getMaterialNameSet = () => { const names = new Set(); Object.values(FACILITIES).forEach(f => { (f.levels || []).forEach(lvl => { Object.keys(lvl.cost).forEach(n => names.add(n)); }); }); return names; };
           const isMaterial = (item) => item && item.type === 'loot' && getMaterialNameSet().has(item.name);
           const isJunk = (item) => item && item.type === 'loot' && !isMaterial(item);
-          const sellAllLoot = () => { const junkItems = player.storage.filter(isJunk); if (junkItems.length === 0) { addLog('没有可出售的杂物。'); return; } const catRelic = player.relics.find(r => r.id === 'cat'); let totalVal = junkItems.reduce((acc, i) => acc + (i.val || 0), 0); if (catRelic) totalVal = Math.floor(totalVal * 1.2); setPlayer(prev => ({ ...prev, money: prev.money + totalVal, storage: prev.storage.filter(i => !isJunk(i)) })); addLog(`一键出售杂物，获得 $${totalVal}`, 'success'); };
+          const sellAllLoot = () => { const junkItems = player.storage.filter(isJunk); if (junkItems.length === 0) { addLog('没有可出售的杂物。'); return; } const catRelic = player.relics.find(r => r.id === 'cat'); const sellMultiplier = getSellMultiplier(); let totalVal = junkItems.reduce((acc, i) => acc + (i.val || 0), 0); if (catRelic) totalVal = Math.floor(totalVal * 1.2); totalVal = Math.floor(totalVal * sellMultiplier); setPlayer(prev => ({ ...prev, money: prev.money + totalVal, storage: prev.storage.filter(i => !isJunk(i)) })); addLog(`一键出售杂物，获得 $${totalVal}`, 'success'); };
 
           const startRaid = () => { setRaidState({ distance: 0, dangerLevel: 1, currentEnemy: null, isGlitchEnemy: false, tempLoot: [], currentLootItem: null, currentInteractiveEvent: null }); setPlayer(p => ({ ...p, sanity: Math.max(0, p.sanity - 5) })); setScene('raid'); addLog('进入废墟... 感觉到这里充满了恶意。'); };
           const generateLootItem = (dist) => { const rand = Math.random() * 100; const luckBonus = Math.floor(dist / 100); const moodBonus = player.mood > 80 ? 5 : 0; let targetRarity = 'white'; if (dist > 3000 && Math.random() > 0.98) targetRarity = 'special'; else { const score = rand + luckBonus + moodBonus; if (score > 140) targetRarity = 'gold'; else if (score > 115) targetRarity = 'purple'; else if (score > 90) targetRarity = 'blue'; else if (score > 60) targetRarity = 'green'; else targetRarity = 'white'; } let pool = LOOT_DB.filter(i => i.rarity === targetRarity); if (pool.length === 0) pool = LOOT_DB.filter(i => i.rarity === 'white'); return pool[Math.floor(Math.random() * pool.length)]; };
-          const explore = () => { if (player.satiety <= 0) { addLog('你饿得走不动了... 生命值正在流失！', 'danger'); setPlayer(p => ({ ...p, hp: Math.max(0, p.hp - 10) })); if (player.hp <= 10) setScene('gameover'); return; } const newDist = raidState.distance + 100; const rng = Math.random(); const currentDanger = 1 + Math.floor(newDist / 500); const satBase = 5, sanBase = 2; let satCost = satBase, sanCost = sanBase; if (player.mood < 15) { satCost += 5; sanCost += 2; } else if (player.mood < 30) { satCost += 2; sanCost += 1; } setPlayer(prev => ({ ...prev, satiety: Math.max(0, prev.satiety - satCost), sanity: Math.max(0, prev.sanity - sanCost) })); setRaidState(prev => ({ ...prev, distance: newDist, dangerLevel: currentDanger })); addLog(`深入废墟 ${newDist}m... (饱食-${satCost}, San-${sanCost})`); if (player.sanity < 50 && Math.random() > 0.7) addLog('你听到耳边有奇怪的低语...', 'danger'); if (rng < 0.2) { const event = STORY_EVENTS[Math.floor(Math.random() * STORY_EVENTS.length)]; setRaidState(prev => ({ ...prev, currentInteractiveEvent: event })); setScene('interactive_event'); addLog('前方出现异常情况...', 'blue'); return; } if (rng < 0.45) { let enemy = null; let isGlitch = false; if (player.sanity < 30 && Math.random() < 0.6) { isGlitch = true; const madnessScale = (50 - player.sanity) / 10; enemy = { name: '?&%#@!', hp: 50 + (madnessScale * 20), maxHp: 50 + (madnessScale * 20), atk: 8 + (madnessScale * 3), exp: 0 }; } else { const enemyPool = ENEMIES.filter((_, idx) => idx < currentDanger); const enemyTemplate = enemyPool[Math.floor(Math.random() * enemyPool.length)] || ENEMIES[ENEMIES.length-1]; enemy = { ...enemyTemplate, maxHp: enemyTemplate.hp }; } setRaidState(prev => ({ ...prev, currentEnemy: enemy, isGlitchEnemy: isGlitch })); setPlayer(p => ({ ...p, sanity: Math.max(0, p.sanity - 5), mood: Math.max(0, p.mood - 2) })); setScene('combat'); if (isGlitch) addLog('警告：遭遇不可名状的实体！', 'danger'); else addLog(`遭遇敌对目标：${enemy.name}！`, 'danger'); } else if (rng < 0.8) { const lootItem = generateLootItem(newDist); setRaidState(prev => ({ ...prev, tempLoot: [...prev.tempLoot, lootItem], currentLootItem: lootItem })); setPlayer(p => ({ ...p, mood: Math.min(p.maxMood, p.mood + 5) })); addLog(`发现物资：${lootItem.name}`, 'success'); setScene('event'); } else { setPlayer(p => ({ ...p, mood: Math.max(0, p.mood - 1) })); addLog('周围很安静，也许太安静了。'); } };
-          const handleCombat = (action) => { if (!raidState.currentEnemy) return; if (action === 'attack') { let hitChance = 0.9; let xfinalAtk = player.weapon.atk; const adrenalineRelic = player.relics.find(r => r.id === 'adrenaline'); if (adrenalineRelic && player.hp < player.maxHp * 0.3) { xfinalAtk *= 2; addLog('肾上腺素激活！伤害翻倍！', 'blue'); } if (player.mood > 80) { } if (player.mood < 30) { hitChance = 0.6; } if (raidState.isGlitchEnemy) { setPlayer(p => ({ ...p, satiety: Math.max(0, p.satiety - 2) })); addLog('攻击这个怪物让你感到异常疲惫...(饱食-2)', 'danger'); } if (Math.random() > hitChance) { addLog('你的攻击落空了！(心情低落)', 'error'); setPlayer(p => ({ ...p, mood: Math.max(0, p.mood - 1) })); } else { let dmg = Math.max(1, xfinalAtk + Math.floor(Math.random() * 3)); const remainingEnemyHp = raidState.currentEnemy.hp - dmg; addLog(`你造成了 ${dmg} 点伤害。`); if (remainingEnemyHp <= 0) { addLog(`击败了敌人！`, 'success'); const enemy = raidState.currentEnemy; const baseReward = Math.floor(((enemy?.exp || 20) * 1.5) + ((enemy?.atk || 5) * 3)); const moneyReward = Math.max(10, baseReward * raidState.dangerLevel + Math.floor(Math.random() * 20)); const dropItems = []; if (Math.random() < 0.6) dropItems.push({ ...ITEMS.food, type: 'consumable' }); if (Math.random() < 0.3) dropItems.push({ ...ITEMS.medkit, type: 'consumable' }); if (player.facilities.workbench && Math.random() < 0.2) dropItems.push({ ...ITEMS.ammo_box, type: 'consumable' }); setPlayer(p => ({ ...p, money: p.money + moneyReward, storage: [...p.storage, ...dropItems] })); addLog(`获得 $${moneyReward}${dropItems.length ? '，并拾取 ' + dropItems.map(i => i.name).join('、') : ''}`, 'success'); const vampireRelic = player.relics.find(r => r.id === 'vampire'); if (vampireRelic) { setPlayer(p => ({ ...p, hp: Math.min(p.maxHp, p.hp + 5) })); addLog('吸血鬼之牙：汲取了 5 点生命。', 'blue'); } setPlayer(p => ({ ...p, mood: Math.min(p.maxMood, p.mood + 5) })); setRaidState(prev => ({ ...prev, currentEnemy: null })); setScene('raid'); return; } setRaidState(prev => ({ ...prev, currentEnemy: { ...prev.currentEnemy, hp: remainingEnemyHp } })); } const enemyDmg = Math.max(0, raidState.currentEnemy.atk - player.armor.def); setPlayer(prev => ({ ...prev, hp: prev.hp - enemyDmg, mood: Math.max(0, prev.mood - 2) })); if(enemyDmg > 0) triggerShake(); addLog(`敌人反击！受到 ${enemyDmg} 点伤害。`, 'danger'); if (player.hp - enemyDmg <= 0) setScene('gameover'); } else if (action === 'flee') { let fleeChance = 0.5; if (player.mood > 80) fleeChance = 0.7; if (player.mood < 30) fleeChance = 0.3; if (Math.random() < fleeChance) { addLog('逃跑成功！'); setRaidState(prev => ({ ...prev, currentEnemy: null })); setPlayer(p => ({ ...p, mood: Math.min(p.maxMood, p.mood + 2) })); addLog('短暂喘息：心情 +2', 'success'); setScene('raid'); } else { addLog('逃跑失败！被敌人追上了。', 'danger'); const enemyDmg = Math.max(0, raidState.currentEnemy.atk - player.armor.def); setPlayer(prev => ({ ...prev, hp: prev.hp - enemyDmg })); triggerShake(); if (player.hp - enemyDmg <= 0) setScene('gameover'); } } };
-          const evac = () => { const healAmount = player.facilities.medical ? 40 : 20; setPlayer(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + healAmount), sanity: Math.min(prev.maxSanity, prev.sanity + 20), satiety: Math.max(0, prev.satiety - 10), storage: [...prev.storage, ...raidState.tempLoot], day: (prev.day || 1) + 1 })); addLog(`撤离成功！物资已转运至仓库。`, 'success'); setScene('result'); };
+          const explore = () => { if (player.satiety <= 0) { addLog('你饿得走不动了... 生命值正在流失！', 'danger'); setPlayer(p => ({ ...p, hp: Math.max(0, p.hp - 10) })); if (player.hp <= 10) setScene('gameover'); return; } const newDist = raidState.distance + 100; const rng = Math.random(); const currentDanger = 1 + Math.floor(newDist / 500); const satBase = 5, sanBase = 2; let satCost = satBase, sanCost = sanBase; if (player.mood < 15) { satCost += 5; sanCost += 2; } else if (player.mood < 30) { satCost += 2; sanCost += 1; } setPlayer(prev => ({ ...prev, satiety: Math.max(0, prev.satiety - satCost), sanity: Math.max(0, prev.sanity - sanCost) })); setRaidState(prev => ({ ...prev, distance: newDist, dangerLevel: currentDanger })); addLog(`深入废墟 ${newDist}m... (饱食-${satCost}, 理智-${sanCost})`); if (player.sanity < 50 && Math.random() > 0.7) addLog('你听到耳边有奇怪的低语...', 'danger'); if (rng < 0.2) { const event = STORY_EVENTS[Math.floor(Math.random() * STORY_EVENTS.length)]; setRaidState(prev => ({ ...prev, currentInteractiveEvent: event })); setScene('interactive_event'); addLog('前方出现异常情况...', 'blue'); return; } if (rng < 0.45) { let enemy = null; let isGlitch = false; if (player.sanity < 30 && Math.random() < 0.6) { isGlitch = true; const madnessScale = (50 - player.sanity) / 10; enemy = { name: '?&%#@!', hp: 50 + (madnessScale * 20), maxHp: 50 + (madnessScale * 20), atk: 8 + (madnessScale * 3), exp: 0 }; } else { const enemyPool = ENEMIES.filter((_, idx) => idx < currentDanger); const enemyTemplate = enemyPool[Math.floor(Math.random() * enemyPool.length)] || ENEMIES[ENEMIES.length-1]; enemy = { ...enemyTemplate, maxHp: enemyTemplate.hp }; } setRaidState(prev => ({ ...prev, currentEnemy: enemy, isGlitchEnemy: isGlitch })); setPlayer(p => ({ ...p, sanity: Math.max(0, p.sanity - 5), mood: Math.max(0, p.mood - 2) })); setScene('combat'); if (isGlitch) addLog('警告：遭遇不可名状的实体！', 'danger'); else addLog(`遭遇敌对目标：${enemy.name}！`, 'danger'); } else if (rng < 0.8) { const lootItem = generateLootItem(newDist); setRaidState(prev => ({ ...prev, tempLoot: [...prev.tempLoot, lootItem], currentLootItem: lootItem })); setPlayer(p => ({ ...p, mood: Math.min(p.maxMood, p.mood + 5) })); addLog(`发现物资：${lootItem.name}`, 'success'); setScene('event'); } else { setPlayer(p => ({ ...p, mood: Math.max(0, p.mood - 1) })); addLog('周围很安静，也许太安静了。'); } };
+          const handleCombat = (action) => { if (!raidState.currentEnemy) return; if (action === 'attack') { let hitChance = 0.9; let xfinalAtk = player.weapon.atk; const adrenalineRelic = player.relics.find(r => r.id === 'adrenaline'); if (adrenalineRelic && player.hp < player.maxHp * 0.3) { xfinalAtk *= 2; addLog('肾上腺素激活！伤害翻倍！', 'blue'); } if (player.mood > 80) { } if (player.mood < 30) { hitChance = 0.6; } if (raidState.isGlitchEnemy) { setPlayer(p => ({ ...p, satiety: Math.max(0, p.satiety - 2) })); addLog('攻击这个怪物让你感到异常疲惫...(饱食-2)', 'danger'); } if (Math.random() > hitChance) { addLog('你的攻击落空了！(心情低落)', 'error'); setPlayer(p => ({ ...p, mood: Math.max(0, p.mood - 1) })); } else { let dmg = Math.max(1, xfinalAtk + Math.floor(Math.random() * 3)); const remainingEnemyHp = raidState.currentEnemy.hp - dmg; addLog(`你造成了 ${dmg} 点伤害。`); if (remainingEnemyHp <= 0) { addLog(`击败了敌人！`, 'success'); const enemy = raidState.currentEnemy; const baseReward = Math.floor(((enemy?.exp || 20) * 1.5) + ((enemy?.atk || 5) * 3)); const moneyReward = Math.max(10, baseReward * raidState.dangerLevel + Math.floor(Math.random() * 20)); const dropItems = []; if (Math.random() < 0.6) dropItems.push({ ...ITEMS.food, type: 'consumable' }); if (Math.random() < 0.3) dropItems.push({ ...ITEMS.medkit, type: 'consumable' }); if (Math.random() < 0.2) dropItems.push({ ...ITEMS.ammo_box, type: 'consumable' }); setPlayer(p => ({ ...p, money: p.money + moneyReward, storage: [...p.storage, ...dropItems] })); addLog(`获得 $${moneyReward}${dropItems.length ? '，并拾取 ' + dropItems.map(i => i.name).join('、') : ''}`, 'success'); const vampireRelic = player.relics.find(r => r.id === 'vampire'); if (vampireRelic) { setPlayer(p => ({ ...p, hp: Math.min(p.maxHp, p.hp + 5) })); addLog('吸血鬼之牙：汲取了 5 点生命。', 'blue'); } setPlayer(p => ({ ...p, mood: Math.min(p.maxMood, p.mood + 5) })); setRaidState(prev => ({ ...prev, currentEnemy: null })); setScene('raid'); return; } setRaidState(prev => ({ ...prev, currentEnemy: { ...prev.currentEnemy, hp: remainingEnemyHp } })); } const enemyDmg = Math.max(0, raidState.currentEnemy.atk - player.armor.def); setPlayer(prev => ({ ...prev, hp: prev.hp - enemyDmg, mood: Math.max(0, prev.mood - 2) })); if(enemyDmg > 0) triggerShake(); addLog(`敌人反击！受到 ${enemyDmg} 点伤害。`, 'danger'); if (player.hp - enemyDmg <= 0) setScene('gameover'); } else if (action === 'flee') { let fleeChance = 0.5; if (player.mood > 80) fleeChance = 0.7; if (player.mood < 30) fleeChance = 0.3; if (Math.random() < fleeChance) { addLog('逃跑成功！'); setRaidState(prev => ({ ...prev, currentEnemy: null })); setPlayer(p => ({ ...p, mood: Math.min(p.maxMood, p.mood + 2) })); addLog('短暂喘息：心情 +2', 'success'); setScene('raid'); } else { addLog('逃跑失败！被敌人追上了。', 'danger'); const enemyDmg = Math.max(0, raidState.currentEnemy.atk - player.armor.def); setPlayer(prev => ({ ...prev, hp: prev.hp - enemyDmg })); triggerShake(); if (player.hp - enemyDmg <= 0) setScene('gameover'); } } };
+          const evac = () => { const medLevel = player.facilities.medical || 0; const healAmount = medLevel === 0 ? 10 : FACILITIES.medical.levels[medLevel - 1].effect; setPlayer(prev => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + healAmount), satiety: Math.max(0, prev.satiety - 10), storage: [...prev.storage, ...raidState.tempLoot], day: (prev.day || 1) + 1 })); addLog(`撤离成功！物资已转运至仓库。`, 'success'); setScene('result'); };
           const resetGame = () => { setPlayer({ hp: 100, maxHp: 100, satiety: 100, maxSatiety: 100, mood: 100, maxMood: 100, sanity: 100, maxSanity: 100, money: 500, weapon: GEAR.knife, armor: GEAR.clothes, relics: [], facilities: {}, inventory: [], storage: [], }); setScene('intro'); setIntroStep(0); setLogs(['重新开始。祝你好运，行者。']); }
           
           const CRTOverlay = () => { const glitchIntensity = player.sanity < 30 ? 'opacity-30' : 'opacity-0'; return ( <div className="pointer-events-none absolute inset-0 z-[60] overflow-hidden rounded-lg"> <div className="scanline"></div> <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0)_50%,rgba(0,0,0,0.2)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] pointer-events-none" /> <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_50%,rgba(0,0,0,0.4)_100%)] pointer-events-none" /> <div className={`absolute inset-0 bg-noise mix-blend-overlay ${glitchIntensity} pointer-events-none transition-opacity duration-1000`}></div> {player.sanity < 50 && ( <div className="absolute top-2 left-2 text-[10px] text-red-500 animate-pulse font-bold tracking-widest">⚠ MENTAL CRITICAL</div> )} </div> ); };
@@ -823,7 +892,7 @@
                                             </div>
                                         </PixelCard>
                                     )}
-                                    <PixelCard onClick={() => { setScene('shop'); setShopTab('buy'); }}>
+                                    <PixelCard onClick={() => { setScene('shop'); setShopTab('exchange'); }} className="col-span-2">
                                         <div className="flex flex-col items-center py-2">
                                             <ShoppingBag className="mb-2 text-yellow-500" size={32} />
                                             <span className="text-2xl">黑市交易</span>
@@ -847,7 +916,7 @@
                                             <span className="text-2xl">物资仓库</span>
                                         </div>
                                     </PixelCard>
-                                    <PixelCard onClick={() => setScene('equipment')} className="col-span-2">
+                                    <PixelCard onClick={() => setScene('equipment')}>
                                        <div className="flex flex-col items-center py-2">
                                             <Shield className="mb-2 text-slate-300" size={32} />
                                             <span className="text-2xl">角色装备</span>
@@ -893,22 +962,26 @@
                                                 )}
                                                 {buySubTab === 'gear' && (
                                                     <div className="space-y-2">
-                                                        {Object.values(GEAR).filter(g => g.cost > 0).map(item => (
-                                                            <div key={item.id} onClick={() => handleShopClick(item, 'gear')} className={`group p-3 border cursor-pointer flex justify-between items-center rounded transition-all duration-200 ${confirmId === item.id ? 'bg-yellow-900/30 border-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.3)]' : 'bg-slate-800/50 border-slate-600 hover:bg-slate-700 hover:border-yellow-600/50'}`}>
-                                                                <div>
-                                                                    <div className={`text-2xl ${confirmId === item.id ? 'text-yellow-400 font-bold' : 'text-green-400 group-hover:text-green-300'}`}>{confirmId === item.id ? `确认购买?` : item.name}</div>
-                                                                    <div className="text-lg text-slate-500">{confirmId === item.id ? '再次点击确认' : item.desc}</div>
+                                                        {Object.values(GEAR).filter(g => g.cost > 0).map(item => {
+                                                            const owned = (player.ownedGear || []).includes(item.id);
+                                                            const cardCls = owned ? 'bg-slate-700 border-slate-700 opacity-60 cursor-not-allowed' : (confirmId === item.id ? 'bg-yellow-900/30 border-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.3)]' : 'bg-slate-800/50 border-slate-600 hover:bg-slate-700 hover:border-yellow-600/50');
+                                                            return (
+                                                                <div key={item.id} onClick={owned ? undefined : () => handleShopClick(item, 'gear')} className={`group p-3 border flex justify-between items-center rounded transition-all duration-200 ${cardCls}`}>
+                                                                    <div>
+                                                                        <div className={`text-2xl ${owned ? 'text-slate-400' : (confirmId === item.id ? 'text-yellow-400 font-bold' : 'text-green-400 group-hover:text-green-300')}`}>{owned ? `${item.name}（已购买）` : (confirmId === item.id ? '确认购买?' : item.name)}</div>
+                                                                        <div className="text-lg text-slate-500">{owned ? '已购买' : (confirmId === item.id ? '再次点击确认' : item.desc)}</div>
+                                                                    </div>
+                                                                    <div className={`text-2xl font-bold ${owned ? 'text-slate-400' : 'text-yellow-500'}`}>${item.cost}</div>
                                                                 </div>
-                                                                <div className="text-2xl font-bold text-yellow-500">${item.cost}</div>
-                                                            </div>
-                                                        ))}
+                                                            );
+                                                        })}
                                                     </div>
                                                 )}
                                                 {buySubTab === 'materials' && (
                                                     <div className="space-y-2">
                                                         {LOOT_DB.filter(isMaterial).map(mat => {
                                                             const key = mat.name;
-                                                            const price = Math.floor((mat.val || 0) * 2);
+                                                            const price = Math.floor((mat.val || 0) * 5);
                                                             return (
                                                                 <div key={`mat-${key}`} onClick={() => handleShopClick(mat, 'material')} className={`group p-3 border cursor-pointer flex justify-between items-center rounded transition-all duration-200 ${confirmId === key ? 'bg-yellow-900/30 border-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.3)]' : 'bg-slate-800/50 border-slate-600 hover:bg-slate-700 hover:border-blue-600/50'}`}>
                                                                     <div>
@@ -1136,31 +1209,30 @@
                               <div className="flex-1 flex flex-col h-full overflow-hidden fade-in min-h-0">
                                 <h2 className="flex-none bg-[#1a1c21] z-10 text-center text-2xl text-orange-400 mb-4 border-b border-slate-700 py-2">=== 设施升级 ===</h2>
                                 <div className="flex-1 overflow-y-auto no-scrollbar space-y-4 pb-2">
-                                    {player.facilities.workbench && (
-                                        <div className="bg-slate-800 p-3 mb-4 rounded border border-blue-500/50">
-                                            <h3 className="text-lg text-blue-400 mb-2">精密工作台</h3>
-                                            <button onClick={craftAmmo} className="w-full bg-slate-700 hover:bg-slate-600 text-lg py-2 rounded border border-slate-600">制造弹药箱 ($50 + 1废钢)</button>
-                                        </div>
-                                    )}
                                     {Object.entries(FACILITIES).map(([key, fac]) => {
-                                        const isBuilt = player.facilities[key];
+                                        const currentLevel = player.facilities[key] || 0;
+                                        const isMax = currentLevel >= fac.maxLevel;
+                                        const nextConfig = isMax ? null : fac.levels[currentLevel];
                                         return (
-                                            <div key={key} className={`p-3 border rounded ${isBuilt ? 'border-green-500/50 bg-green-900/10' : 'border-slate-600 bg-slate-800'}`}>
+                                            <div key={key} className={`p-3 border rounded ${currentLevel > 0 ? 'border-green-500/50 bg-green-900/10' : 'border-slate-600 bg-slate-800'}`}>
                                                 <div className="flex justify-between items-center mb-1">
-                                                    <span className={`text-xl ${isBuilt ? 'text-green-400' : 'text-slate-200'}`}>{fac.name}</span>
-                                                    {isBuilt && <span className="text-sm bg-green-900 text-green-300 px-2 rounded">已建造</span>}
+                                                    <span className={`text-xl ${currentLevel > 0 ? 'text-green-400' : 'text-slate-200'}`}>{fac.name} <span className="text-sm text-yellow-500">Lv.{currentLevel}</span></span>
+                                                    {isMax && <span className="text-sm bg-yellow-900 text-yellow-300 px-2 rounded">已满级</span>}
                                                 </div>
-                                                <p className="text-sm text-slate-400 mb-2">{fac.desc}</p>
-                                                {!isBuilt && (
-                                                    <div className="mt-2">
-                                                        <div className="text-sm text-slate-500 mb-1">所需材料:</div>
+                                                {currentLevel > 0 && (
+                                                    <p className="text-sm text-green-300 mb-1">当前: {fac.levels[currentLevel-1].desc}</p>
+                                                )}
+                                                {!isMax && nextConfig && (
+                                                    <div className="mt-2 border-t border-slate-600/50 pt-2">
+                                                        <p className="text-sm text-slate-400 mb-1">下一级: {nextConfig.desc}</p>
+                                                        <div className="text-sm text-slate-500 mb-1">升级材料:</div>
                                                         <div className="grid grid-cols-2 gap-1 mb-2">
-                                                            {Object.entries(fac.cost).map(([mat, count]) => {
+                                                            {Object.entries(nextConfig.cost).map(([mat, count]) => {
                                                                 const has = countItemInStorage(mat);
                                                                 return ( <span key={mat} className={`text-sm ${has >= count ? 'text-green-500' : 'text-red-500'}`}>{mat}: {has}/{count}</span> )
                                                             })}
                                                         </div>
-                                                        <button onClick={() => upgradeFacility(key)} className="w-full bg-orange-700 hover:bg-orange-600 text-white text-lg py-2 rounded">建造设施</button>
+                                                        <button onClick={() => upgradeFacility(key)} className="w-full bg-orange-700 hover:bg-orange-600 text-white text-lg py-2 rounded">升级至 Lv.{currentLevel + 1}</button>
                                                     </div>
                                                 )}
                                             </div>
@@ -1186,9 +1258,10 @@
                                                         <div className="text-sm text-slate-500 mt-0.5">{g.item.type === 'consumable' ? '食物/药品' : g.item.type === 'relic' ? '遗物' : isMaterial(g.item) ? '材料' : '杂物'}</div>
                                                     </div>
                                                     <div className="flex gap-2">
-                                                        {g.item.type === 'consumable' || g.item.type === 'relic' ? (
+                                                        {(g.item.type === 'consumable' || g.item.type === 'relic') && (
                                                             <button onClick={() => useOneByKey(g.key)} className="bg-green-700 hover:bg-green-600 text-white px-3 py-1 text-lg rounded">{g.item.type === 'relic' ? '装备' : '使用'}</button>
-                                                        ) : (
+                                                        )}
+                                                        {(g.item.type === 'loot' || g.item.type === 'relic') && (
                                                             <button onClick={() => sellOneByKey(g.key)} className="bg-slate-700 hover:bg-slate-600 text-yellow-400 px-3 py-1 text-lg rounded border border-slate-600 flex items-center gap-1"><Coins size={16}/> ${g.item.val}</button>
                                                         )}
                                                     </div>
@@ -1262,7 +1335,7 @@
                                         <div className="space-y-2"><div className="text-xl text-slate-500">正在搜索区域...</div><div className="text-5xl font-bold text-slate-200 tracking-widest">{raidState.distance}m</div></div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4 mt-auto mb-2">
-                                         <PixelCard onClick={explore} className="bg-slate-800 hover:bg-green-900/20 border-green-800/50"><div className="text-center py-2"><span className="text-2xl font-bold text-green-500 block mb-1">&gt; 继续搜寻</span><span className="text-lg text-slate-500">消耗5饱食/2San</span></div></PixelCard>
+                                         <PixelCard onClick={explore} className="bg-slate-800 hover:bg-green-900/20 border-green-800/50"><div className="text-center py-2"><span className="text-2xl font-bold text-green-500 block mb-1">&gt; 继续搜寻</span><span className="text-lg text-slate-500">消耗5饱食/2理智</span></div></PixelCard>
                                          <PixelCard onClick={evac} className="bg-slate-800 hover:bg-blue-900/20 border-blue-800/50"><div className="text-center py-2"><span className="text-2xl font-bold text-blue-500 block mb-1">&lt; 呼叫撤离</span></div></PixelCard>
                                     </div>
                                 </div>
